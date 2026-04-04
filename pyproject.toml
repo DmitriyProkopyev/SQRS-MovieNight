@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "movie-night"
+version = "0.1.0"
+description = "Movie Night backend skeleton for SQR project"
+authors = ["OpenAI <example@example.com>"]
+readme = "README.md"
+packages = [{ include = "movienight", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = { extras = ["standard"], version = "^0.35.0" }
+sqlalchemy = "^2.0.40"
+pydantic-settings = "^2.8.0"
+pwdlib = "^0.2.1"
+PyJWT = "^2.10.1"
+python-multipart = "^0.0.20"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.0.0"
+flake8 = "^7.1.2"
+bandit = "^1.8.3"
+radon = "^6.0.1"
+locust = "^2.37.10"
+httpx = "^0.28.1"
+pre-commit = "^4.2.0"
+
+[tool.poetry.scripts]
+movie-night = "movienight.main:run"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
