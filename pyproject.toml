@@ -5,6 +5,7 @@ description = "Movie Night backend skeleton for SQR project"
 authors = ["OpenAI <example@example.com>"]
 readme = "README.md"
 packages = [{ include = "movienight", from = "src" }]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -15,6 +16,8 @@ pydantic-settings = "^2.8.0"
 pwdlib = "^0.2.1"
 PyJWT = "^2.10.1"
 python-multipart = "^0.0.20"
+streamlit = "^1.56.0"
+requests = "^2.33.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

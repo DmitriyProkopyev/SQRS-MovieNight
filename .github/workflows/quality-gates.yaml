@@ -1,0 +1,120 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [ main ]  # direct commits into main are restricted
+
+jobs:
+  pr-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get the source code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Install dependencies and dev tools
+      run: |
+        poetry install --no-interaction --no-root
+
+    - name: Flake8 linting
+      run: poetry run flake8 src/ --count --select=E,F,W --show-source --statistics
+
+    - name: Bandit security check
+      run: poetry run bandit -r src/ -ll
+
+    - name: Run tests with coverage
+      run: poetry run pytest --cov=src --cov-fail-under=70
+
+    - name: Check cyclomatic complexity
+      run: | 
+        python3 - <<'PY'
+        import re
+        import subprocess
+        import sys
+
+        threshold = 10
+        proc = subprocess.run(
+            ["poetry", "run", "radon", "cc", "-s", "src/"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        max_cc = 0
+        worst_line = ""
+
+        for line in proc.stdout.splitlines():
+            m = re.search(r"\((\d+)\)$", line.strip())
+            if not m:
+                continue
+            score = int(m.group(1))
+            if score > max_cc:
+                max_cc = score
+                worst_line = line
+
+        print(f"Max complexity: {max_cc}")
+        if worst_line:
+            print(f"Worst block: {worst_line}")
+
+        if max_cc > threshold:
+            sys.exit(f"Cyclomatic complexity too high: {max_cc} > {threshold}")
+        PY
+
+    - name: Check maintainability index
+      run: |
+        python - <<'PY'
+        import re
+        import subprocess
+        import sys
+
+        threshold = 70.0
+
+        proc = subprocess.run(
+            ["poetry", "run", "radon", "mi", "-s", "src/"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        min_mi = 101.0
+        worst_line = ""
+
+        for line in proc.stdout.splitlines():
+            line = line.strip()
+            m = re.search(r"\((\d+(?:\.\d+)?)\)\s*$", line)
+            if not m:
+                continue
+            mi = float(m.group(1))
+            if mi < min_mi:
+                min_mi = mi
+                worst_line = line
+
+        if min_mi == 101.0:
+            sys.exit("No maintainability index values were parsed from radon output")
+
+        print(f"Minimum MI: {min_mi:.2f}")
+        print(f"Worst line: {worst_line}")
+
+        if min_mi < threshold:
+            sys.exit(f"Maintainability index too low: {min_mi:.2f} < {threshold:.2f}")
+        PY
+
+#    - name: Load test with Locust
+#      run: |
+#        locust_output=$(poetry run locust -f load_tests.py --headless -u 10 -r 2 --run-time 1m --csv=locust --logfile=/dev/null 2>&1 || true)
+#        p95=$(grep -A 20 "Aggregated" <<< "$locust_output" | grep "P95" | head -1 | awk '{print $3}')
+#        if (( $(echo "$p95 > 250" | bc -l) )); then
+#          echo "P95 latency: $p95 ms > 250ms - FAIL"
+#          exit 1
+#        fi
+#        echo "P95 latency: $p95 ms <= 250ms - PASS"
