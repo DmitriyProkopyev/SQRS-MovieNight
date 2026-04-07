@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest==8.3.5
+pytest-cov==6.0.0
+flake8==7.1.2
+bandit==1.8.3
+radon==6.0.1
+locust==2.37.10
+httpx==0.28.1
+pre-commit==4.2.0
