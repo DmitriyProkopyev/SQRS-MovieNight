@@ -125,7 +125,7 @@ class HomeService:
     ) -> ProposalGroup:
         winner = choose_winner(
             component,
-            vote_counts
+            vote_counts,
         ) if component else None
 
         group_starts_at = min(as_utc(item.starts_at) for item in component)
@@ -134,11 +134,16 @@ class HomeService:
         show_winner = len(component) > 1 and group_is_locked
         winner_id = winner.id if winner and show_winner else None
 
+        component_vote_counts = {
+            item.id: vote_counts.get(item.id, 0)
+            for item in component
+        }
+
         cards = [
             self._to_card(
                 proposal=item,
                 component=component,
-                vote_counts=vote_counts,
+                component_vote_counts=component_vote_counts,
                 votes_count=vote_counts.get(item.id, 0),
                 my_vote=item.id in my_votes,
                 reactions=reaction_counts.get(item.id, {}),
@@ -164,7 +169,7 @@ class HomeService:
         self,
         proposal: Proposal,
         component: list[Proposal],
-        vote_counts: dict[int, int],
+        component_vote_counts: dict[int, int],
         votes_count: int,
         my_vote: bool,
         reactions: dict[str, int],
@@ -173,38 +178,37 @@ class HomeService:
         now: datetime,
         winner_id: int | None,
     ) -> ProposalCard:
-        starts_at = as_utc(proposal.starts_at)
-        ends_at = as_utc(proposal.ends_at)
-        created_at = as_utc(proposal.created_at)
-        now = as_utc(now)
+        starts_at, ends_at, created_at, now = self._normalize_card_times(
+            proposal=proposal,
+            now=now,
+        )
 
         is_past = is_in_past(starts_at, now)
         vote_locked = is_vote_locked(starts_at, now)
 
-        reaction_block_active = is_reaction_target(
+        (
+            reaction_block_active,
+            visible_reactions,
+            visible_my_reactions,
+            can_add_reaction,
+            can_remove_reaction,
+        ) = self._build_reaction_state(
             proposal=proposal,
             component=component,
-            vote_counts={
-                item.id: vote_counts.get(item.id, 0)
-                for item in component
-            },
+            component_vote_counts=component_vote_counts,
+            reactions=reactions,
+            my_reactions=my_reactions,
             now=now,
         )
 
-        can_vote = (
-            not my_vote and
-            proposal.creator_id != current_user.id and
-            not vote_locked and
-            not is_past
+        can_vote, can_unvote, can_delete = self._build_vote_state(
+            proposal=proposal,
+            current_user=current_user,
+            my_vote=my_vote,
+            vote_locked=vote_locked,
+            is_past=is_past,
         )
-        can_unvote = my_vote and not vote_locked and not is_past
-        can_delete = proposal.creator_id == current_user.id and not is_past
-        can_add_reaction = reaction_block_active
-        can_remove_reaction = reaction_block_active and bool(my_reactions)
-
-        visible_reactions = reactions if reaction_block_active else None
-        visible_my_reactions = my_reactions if reaction_block_active else []
-
+        
         return ProposalCard(
             id=proposal.id,
             movie_title=proposal.movie_title,
@@ -219,13 +223,81 @@ class HomeService:
             reactions=visible_reactions,
             show_reactions=reaction_block_active,
             is_past=is_past,
-            is_winner=(
-                winner_id == proposal.id
-                if winner_id is not None else False
-            ),
+            is_winner=self._is_winner(proposal.id, winner_id),
             can_vote=can_vote,
             can_unvote=can_unvote,
             can_delete=can_delete,
             can_add_reaction=can_add_reaction,
             can_remove_reaction=can_remove_reaction,
         )
+    def _normalize_card_times(
+        self,
+        proposal: Proposal,
+        now: datetime,
+    ) -> tuple[datetime, datetime, datetime, datetime]:
+        starts_at = as_utc(proposal.starts_at)
+        ends_at = as_utc(proposal.ends_at)
+        created_at = as_utc(proposal.created_at)
+        normalized_now = as_utc(now)
+        return starts_at, ends_at, created_at, normalized_now
+
+
+    def _build_vote_state(
+        self,
+        proposal: Proposal,
+        current_user: User,
+        my_vote: bool,
+        vote_locked: bool,
+        is_past: bool,
+    ) -> tuple[bool, bool, bool]:
+        is_owner = proposal.creator_id == current_user.id
+
+        can_vote = not any((
+            my_vote,
+            is_owner,
+            vote_locked,
+            is_past,
+        ))
+        can_unvote = my_vote and not vote_locked and not is_past
+        can_delete = is_owner and not is_past
+
+        return can_vote, can_unvote, can_delete
+
+
+    def _build_reaction_state(
+        self,
+        proposal: Proposal,
+        component: list[Proposal],
+        component_vote_counts: dict[int, int],
+        reactions: dict[str, int],
+        my_reactions: list[str],
+        now: datetime,
+    ) -> tuple[bool, dict[str, int] | None, list[str], bool, bool]:
+        reaction_block_active = is_reaction_target(
+            proposal=proposal,
+            component=component,
+            vote_counts=component_vote_counts,
+            now=now,
+        )
+
+        if reaction_block_active:
+            visible_reactions: dict[str, int] | None = reactions
+            visible_my_reactions = my_reactions
+        else:
+            visible_reactions = None
+            visible_my_reactions = []
+
+        can_add_reaction = reaction_block_active
+        can_remove_reaction = reaction_block_active and bool(my_reactions)
+
+        return (
+            reaction_block_active,
+            visible_reactions,
+            visible_my_reactions,
+            can_add_reaction,
+            can_remove_reaction,
+        )
+
+
+    def _is_winner(self, proposal_id: int, winner_id: int | None) -> bool:
+        return winner_id is not None and winner_id == proposal_id
