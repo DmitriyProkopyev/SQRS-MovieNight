@@ -208,7 +208,6 @@ class HomeService:
             vote_locked=vote_locked,
             is_past=is_past,
         )
-        
         return ProposalCard(
             id=proposal.id,
             movie_title=proposal.movie_title,
@@ -230,6 +229,7 @@ class HomeService:
             can_add_reaction=can_add_reaction,
             can_remove_reaction=can_remove_reaction,
         )
+
     def _normalize_card_times(
         self,
         proposal: Proposal,
@@ -240,7 +240,6 @@ class HomeService:
         created_at = as_utc(proposal.created_at)
         normalized_now = as_utc(now)
         return starts_at, ends_at, created_at, normalized_now
-
 
     def _build_vote_state(
         self,
@@ -262,7 +261,6 @@ class HomeService:
         can_delete = is_owner and not is_past
 
         return can_vote, can_unvote, can_delete
-
 
     def _build_reaction_state(
         self,
@@ -297,7 +295,6 @@ class HomeService:
             can_add_reaction,
             can_remove_reaction,
         )
-
 
     def _is_winner(self, proposal_id: int, winner_id: int | None) -> bool:
         return winner_id is not None and winner_id == proposal_id
