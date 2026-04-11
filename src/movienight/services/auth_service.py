@@ -39,7 +39,7 @@ class AuthService:
         if user is None or not verify_password(payload.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Введен неверный логин или пароль.",
+                detail="Invalid username or password.",
             )
 
         token = create_access_token(subject=str(user.id))
