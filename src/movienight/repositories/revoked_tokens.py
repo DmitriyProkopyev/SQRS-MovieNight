@@ -1,9 +1,13 @@
 from datetime import datetime
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from movienight.db.models import RevokedToken
+from movienight.repositories.revoked_token_create import (
+    create_revoked_token,
+)
+from movienight.repositories.revoked_token_exists import (
+    revoked_token_exists,
+)
 
 
 class RevokedTokenRepository:
@@ -11,11 +15,17 @@ class RevokedTokenRepository:
         self.db = db
 
     def exists(self, jti: str) -> bool:
-        statement = select(RevokedToken.id).where(RevokedToken.jti == jti)
-        return self.db.scalar(statement) is not None
+        return revoked_token_exists(self.db, jti)
 
-    def create(self, jti: str, expires_at: datetime, reason: str = "logout") -> None:
-        if self.exists(jti):
-            return
-        self.db.add(RevokedToken(jti=jti, expires_at=expires_at, reason=reason))
-        self.db.commit()
+    def create(
+        self,
+        jti: str,
+        expires_at: datetime,
+        reason: str = "logout",
+    ) -> None:
+        create_revoked_token(
+            db=self.db,
+            jti=jti,
+            expires_at=expires_at,
+            reason=reason,
+        )

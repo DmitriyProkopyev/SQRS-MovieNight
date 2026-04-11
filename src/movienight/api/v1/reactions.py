@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends, status
 
 from movienight.api.deps import DbSession, get_current_user
-from movienight.schemas.reaction import AddReactionRequest, ReactionActionResponse
+from movienight.schemas.reaction import (
+    AddReactionRequest,
+    ReactionActionResponse
+)
 from movienight.services.reaction_service import ReactionService
 
-router = APIRouter(prefix="/proposals/{proposal_id}/reactions", tags=["reactions"])
+router = APIRouter(
+    prefix="/proposals/{proposal_id}/reactions",
+    tags=["reactions"]
+)
 
 
 @router.post(
@@ -12,8 +18,10 @@ router = APIRouter(prefix="/proposals/{proposal_id}/reactions", tags=["reactions
     summary="Add food reaction",
     description=(
         "Add a food reaction to a proposal. "
-        "Food reactions are available only during the final hour before the event starts. "
-        "If the proposal belongs to a conflict group, reactions are allowed only for the selected winner. "
+        "Food reactions are available only during the "
+        "final hour before the event starts. "
+        "If the proposal belongs to a conflict group, "
+        "reactions are allowed only for the selected winner. "
         "Hidden reactions are not exposed by the API."
     ),
     response_model=ReactionActionResponse,
@@ -38,13 +46,20 @@ router = APIRouter(prefix="/proposals/{proposal_id}/reactions", tags=["reactions
                         "not_winner": {
                             "summary": "Not the selected winner",
                             "value": {
-                                "detail": "Food reactions are allowed only for the selected winner during the final hour before start."
+                                "detail": (
+                                    "Food reactions are allowed "
+                                    "only for the selected winner "
+                                    "during the final hour before start."
+                                )
                             },
                         },
                         "duplicate_category": {
                             "summary": "Category already added",
                             "value": {
-                                "detail": "You have already added this food reaction category."
+                                "detail": (
+                                    "You have already "
+                                    "added this food reaction category."
+                                )
                             },
                         },
                     }
@@ -72,9 +87,12 @@ def add_reaction(
     "/{category}",
     summary="Delete food reaction",
     description=(
-        "Remove one food reaction category previously added by the current user. "
-        "Food reactions can be removed only from the currently valid reaction target: "
-        "the single proposal itself, or the winner of a conflict group during the final hour."
+        "Remove one food reaction category "
+        "previously added by the current user. "
+        "Food reactions can be removed only "
+        "from the currently valid reaction target: "
+        "the single proposal itself, or the "
+        "winner of a conflict group during the final hour."
     ),
     response_model=ReactionActionResponse,
     status_code=status.HTTP_200_OK,
@@ -82,8 +100,10 @@ def add_reaction(
         400: {
             "description": (
                 "Reaction cannot be removed. "
-                "Examples: proposal is in the past; proposal is not the selected winner; "
-                "reaction window is not active; user has not added this category before."
+                "Examples: proposal is in the past; "
+                "proposal is not the selected winner; "
+                "reaction window is not active; user "
+                "has not added this category before."
             )
         },
         401: {"description": "Authentication required."},
