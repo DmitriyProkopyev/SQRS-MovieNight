@@ -1,0 +1,17 @@
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from movienight.db.models import Proposal
+from movienight.repositories.proposal_list_order import (
+    apply_proposal_order,
+)
+
+
+def list_proposals_by_room(
+    db: Session,
+    room: str,
+) -> list[Proposal]:
+    statement = apply_proposal_order(
+        select(Proposal).where(Proposal.room == room)
+    )
+    return list(db.scalars(statement))
