@@ -4,10 +4,17 @@ from fastapi import HTTPException, status
 
 from movienight.core.clock import as_utc
 from movienight.db.models import Proposal
-from movienight.services.schedule_rules import overlaps, is_in_past, is_vote_locked
+from movienight.services.schedule_rules import (
+    overlaps,
+    is_in_past,
+    is_vote_locked
+)
 
 
-def build_conflict_component(target: Proposal, room_proposals: list[Proposal]) -> list[Proposal]:
+def build_conflict_component(
+    target: Proposal,
+    room_proposals: list[Proposal]
+) -> list[Proposal]:
     component: list[Proposal] = []
     stack = [target]
     seen_ids: set[int] = set()
@@ -43,7 +50,10 @@ def build_conflict_component(target: Proposal, room_proposals: list[Proposal]) -
     return component
 
 
-def choose_winner(component: list[Proposal], vote_counts: dict[int, int]) -> Proposal:
+def choose_winner(
+    component: list[Proposal],
+    vote_counts: dict[int, int]
+) -> Proposal:
     ranked = sorted(
         component,
         key=lambda item: (
@@ -88,23 +98,45 @@ def ensure_vote_allowed(
     now = as_utc(now)
 
     if proposal.creator_id == current_user_id:
-        _raise_bad_request("You cannot vote for your own proposal.")
+        _raise_bad_request(
+            "You cannot vote for "
+            "your own proposal."
+        )
     if is_in_past(starts_at, now) or is_vote_locked(starts_at, now):
-        _raise_bad_request("Voting is not allowed for this proposal anymore.")
+        _raise_bad_request(
+            "Voting is not allowed for "
+            "this proposal anymore."
+        )
     if already_voted_for_target:
-        _raise_bad_request("You have already voted for this proposal.")
+        _raise_bad_request(
+            "You have already voted "
+            "for this proposal."
+        )
     if user_votes_in_group:
-        _raise_bad_request("You have already voted in this voting group.")
+        _raise_bad_request(
+            "You have already voted "
+            "in this voting group."
+        )
 
 
-def ensure_vote_removal_allowed(has_vote: bool, proposal: Proposal, now: datetime) -> None:
+def ensure_vote_removal_allowed(
+    has_vote: bool,
+    proposal: Proposal,
+    now: datetime
+) -> None:
     starts_at = as_utc(proposal.starts_at)
     now = as_utc(now)
 
     if not has_vote:
-        _raise_bad_request("You have not voted for this proposal.")
+        _raise_bad_request(
+            "You have not voted "
+            "for this proposal."
+        )
     if is_in_past(starts_at, now) or is_vote_locked(starts_at, now):
-        _raise_bad_request("Vote cancellation is not allowed for this proposal anymore.")
+        _raise_bad_request(
+            "Vote cancellation is not "
+            "allowed for this proposal anymore."
+        )
 
 
 def ensure_reaction_add_allowed(
@@ -117,13 +149,18 @@ def ensure_reaction_add_allowed(
     now = as_utc(now)
 
     if is_in_past(starts_at, now):
-        _raise_bad_request("Food reactions cannot be added to past proposals.")
+        _raise_bad_request(
+            "Food reactions cannot be added to past proposals."
+        )
     if not is_target:
         _raise_bad_request(
-            "Food reactions are allowed only for the selected winner during the final hour before start."
+            "Food reactions are allowed only for the "
+            "selected winner during the final hour before start."
         )
     if has_same_category:
-        _raise_bad_request("You have already added this food reaction category.")
+        _raise_bad_request(
+            "You have already added this food reaction category."
+        )
 
 
 def ensure_reaction_delete_allowed(
@@ -136,14 +173,22 @@ def ensure_reaction_delete_allowed(
     now = as_utc(now)
 
     if is_in_past(starts_at, now):
-        _raise_bad_request("Food reactions cannot be removed from past proposals.")
+        _raise_bad_request(
+            "Food reactions cannot be removed from past proposals."
+        )
     if not is_target:
         _raise_bad_request(
-            "Food reactions can be removed only for the selected winner during the final hour before start."
+            "Food reactions can be removed only for the "
+            "selected winner during the final hour before start."
         )
     if not has_reaction:
-        _raise_bad_request("You have not added this food reaction category to the proposal.")
+        _raise_bad_request(
+            "You have not added this food reaction category to the proposal."
+        )
 
 
 def _raise_bad_request(message: str) -> None:
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=message
+    )

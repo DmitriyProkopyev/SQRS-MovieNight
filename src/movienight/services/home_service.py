@@ -7,7 +7,11 @@ from movienight.db.models import Proposal, User
 from movienight.repositories.proposals import ProposalRepository
 from movienight.repositories.reactions import ReactionRepository
 from movienight.repositories.votes import VoteRepository
-from movienight.schemas.home import HomePageResponse, ProposalCard, ProposalGroup
+from movienight.schemas.home import (
+    HomePageResponse,
+    ProposalCard,
+    ProposalGroup
+)
 from movienight.services.schedule_rules import is_in_past, is_vote_locked
 from movienight.services.voting_rules import (
     build_conflict_component,
@@ -23,7 +27,11 @@ class HomeService:
         self.votes = VoteRepository(db)
         self.reactions = ReactionRepository(db)
 
-    def get_home_page(self, current_user: User, mine_only: bool = False) -> HomePageResponse:
+    def get_home_page(
+        self,
+        current_user: User,
+        mine_only: bool = False
+    ) -> HomePageResponse:
         now = utcnow()
 
         if mine_only:
@@ -41,7 +49,10 @@ class HomeService:
         )
         my_votes = {
             item.proposal_id
-            for item in self.votes.get_user_votes_in_group(current_user.id, proposal_ids)
+            for item in self.votes.get_user_votes_in_group(
+                current_user.id,
+                proposal_ids
+            )
         }
 
         groups = self._build_groups(
@@ -72,8 +83,14 @@ class HomeService:
             if proposal.id in visited:
                 continue
 
-            room_proposals = [item for item in proposals if item.room == proposal.room]
-            component = build_conflict_component(proposal, room_proposals)
+            room_proposals = [
+                item for item in proposals
+                if item.room == proposal.room
+            ]
+            component = build_conflict_component(
+                proposal,
+                room_proposals
+            )
             visited.update(item.id for item in component)
 
             groups.append(
@@ -88,7 +105,12 @@ class HomeService:
                 )
             )
 
-        groups.sort(key=lambda group: (group.starts_at, group.room))
+        groups.sort(
+            key=lambda group: (
+                group.starts_at,
+                group.room
+            )
+        )
         return groups
 
     def _to_group(
@@ -101,7 +123,10 @@ class HomeService:
         current_user: User,
         now: datetime,
     ) -> ProposalGroup:
-        winner = choose_winner(component, vote_counts) if component else None
+        winner = choose_winner(
+            component,
+            vote_counts
+        ) if component else None
 
         group_starts_at = min(as_utc(item.starts_at) for item in component)
         group_ends_at = max(as_utc(item.ends_at) for item in component)
@@ -159,15 +184,18 @@ class HomeService:
         reaction_block_active = is_reaction_target(
             proposal=proposal,
             component=component,
-            vote_counts={item.id: vote_counts.get(item.id, 0) for item in component},
+            vote_counts={
+                item.id: vote_counts.get(item.id, 0)
+                for item in component
+            },
             now=now,
         )
 
         can_vote = (
-            not my_vote
-            and proposal.creator_id != current_user.id
-            and not vote_locked
-            and not is_past
+            not my_vote and
+            proposal.creator_id != current_user.id and
+            not vote_locked and
+            not is_past
         )
         can_unvote = my_vote and not vote_locked and not is_past
         can_delete = proposal.creator_id == current_user.id and not is_past
@@ -191,7 +219,10 @@ class HomeService:
             reactions=visible_reactions,
             show_reactions=reaction_block_active,
             is_past=is_past,
-            is_winner=winner_id == proposal.id if winner_id is not None else False,
+            is_winner=(
+                winner_id == proposal.id
+                if winner_id is not None else False
+            ),
             can_vote=can_vote,
             can_unvote=can_unvote,
             can_delete=can_delete,

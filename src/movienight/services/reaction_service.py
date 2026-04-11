@@ -22,10 +22,19 @@ class ReactionService:
         self.reactions = ReactionRepository(db)
         self.votes = VoteRepository(db)
 
-    def add_reaction(self, proposal_id: int, category: str, current_user: User) -> ReactionActionResponse:
+    def add_reaction(
+        self,
+        proposal_id: int,
+        category: str,
+        current_user: User
+    ) -> ReactionActionResponse:
         proposal = self._require_proposal(proposal_id)
         normalized = self._normalize_category(category)
-        existing = self.reactions.find_by_user_proposal_category(current_user.id, proposal_id, normalized)
+        existing = self.reactions.find_by_user_proposal_category(
+            current_user.id,
+            proposal_id,
+            normalized
+        )
 
         is_target = self._is_reaction_target(proposal)
 
@@ -44,7 +53,10 @@ class ReactionService:
                 created_at=utcnow(),
             )
         )
-        total = self.reactions.count_for_proposal_and_category(proposal_id, normalized)
+        total = self.reactions.count_for_proposal_and_category(
+            proposal_id,
+            normalized
+        )
         return ReactionActionResponse(
             proposal_id=proposal_id,
             category=normalized,
@@ -52,10 +64,19 @@ class ReactionService:
             message="Reaction added.",
         )
 
-    def remove_reaction(self, proposal_id: int, category: str, current_user: User) -> ReactionActionResponse:
+    def remove_reaction(
+        self,
+        proposal_id: int,
+        category: str,
+        current_user: User
+    ) -> ReactionActionResponse:
         proposal = self._require_proposal(proposal_id)
         normalized = self._normalize_category(category)
-        existing = self.reactions.find_by_user_proposal_category(current_user.id, proposal_id, normalized)
+        existing = self.reactions.find_by_user_proposal_category(
+            current_user.id,
+            proposal_id,
+            normalized
+        )
 
         is_target = self._is_reaction_target(proposal)
 
@@ -68,7 +89,10 @@ class ReactionService:
 
         assert existing is not None
         self.reactions.delete(existing)
-        total = self.reactions.count_for_proposal_and_category(proposal_id, normalized)
+        total = self.reactions.count_for_proposal_and_category(
+            proposal_id,
+            normalized
+        )
         return ReactionActionResponse(
             proposal_id=proposal_id,
             category=normalized,
@@ -78,8 +102,13 @@ class ReactionService:
 
     def _is_reaction_target(self, proposal) -> bool:
         room_proposals = self.proposals.list_by_room(proposal.room)
-        component = build_conflict_component(proposal, room_proposals)
-        vote_counts = self.votes.count_by_proposal_ids([item.id for item in component])
+        component = build_conflict_component(
+            proposal,
+            room_proposals
+        )
+        vote_counts = self.votes.count_by_proposal_ids(
+            [item.id for item in component]
+        )
         return is_reaction_target(
             proposal=proposal,
             component=component,
@@ -90,7 +119,10 @@ class ReactionService:
     def _require_proposal(self, proposal_id: int):
         proposal = self.proposals.get(proposal_id)
         if proposal is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proposal not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Proposal not found."
+            )
         return proposal
 
     def _normalize_category(self, category: str) -> str:

@@ -28,7 +28,11 @@ class AuthService:
         self.users = UserRepository(db)
         self.revoked_tokens = RevokedTokenRepository(db)
 
-    def login(self, payload: LoginRequest, current_user=None) -> LoginResponse:
+    def login(
+        self,
+        payload: LoginRequest,
+        current_user=None
+    ) -> LoginResponse:
         if current_user is not None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -36,10 +40,13 @@ class AuthService:
             )
 
         user = self.users.get_by_username(payload.username.strip())
-        if user is None or not verify_password(payload.password, user.password_hash):
+        if user is None or not verify_password(
+            payload.password,
+            user.password_hash
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Введен неверный логин или пароль.",
+                detail="Incorrect login or password",
             )
 
         token = create_access_token(subject=str(user.id))
@@ -48,7 +55,11 @@ class AuthService:
             user=UserResponse.model_validate(user),
         )
 
-    def register(self, payload: RegisterRequest, current_user=None) -> LoginResponse:
+    def register(
+        self,
+        payload: RegisterRequest,
+        current_user=None
+    ) -> LoginResponse:
         if current_user is not None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -102,4 +113,6 @@ class AuthService:
             ) from exc
 
         self.revoked_tokens.create(jti=jti, expires_at=expires_at)
-        return MessageResponse(message=f"User '{user.username}' was logged out.")
+        return MessageResponse(
+            message=f"User '{user.username}' was logged out."
+            )

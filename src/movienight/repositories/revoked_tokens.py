@@ -14,8 +14,19 @@ class RevokedTokenRepository:
         statement = select(RevokedToken.id).where(RevokedToken.jti == jti)
         return self.db.scalar(statement) is not None
 
-    def create(self, jti: str, expires_at: datetime, reason: str = "logout") -> None:
+    def create(
+        self,
+        jti: str,
+        expires_at: datetime,
+        reason: str = "logout"
+    ) -> None:
         if self.exists(jti):
             return
-        self.db.add(RevokedToken(jti=jti, expires_at=expires_at, reason=reason))
+        self.db.add(
+            RevokedToken(
+                jti=jti,
+                expires_at=expires_at,
+                reason=reason
+            )
+        )
         self.db.commit()

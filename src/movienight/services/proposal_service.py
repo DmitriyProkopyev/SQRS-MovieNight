@@ -18,9 +18,17 @@ class ProposalService:
         self.db = db
         self.proposals = ProposalRepository(db)
 
-    def create_proposal(self, payload: CreateProposalRequest, current_user: User) -> ProposalResponse:
+    def create_proposal(
+        self,
+        payload: CreateProposalRequest,
+        current_user: User
+    ) -> ProposalResponse:
         now = utcnow()
-        validate_proposal_time_bounds(payload.starts_at, payload.ends_at, now)
+        validate_proposal_time_bounds(
+            payload.starts_at,
+            payload.ends_at,
+            now
+        )
         room_proposals = self.proposals.list_by_room(payload.room)
         ensure_creation_allowed(
             room=payload.room,
@@ -42,10 +50,17 @@ class ProposalService:
         created = self.proposals.create(proposal)
         return ProposalResponse.model_validate(created)
 
-    def delete_proposal(self, proposal_id: int, current_user: User) -> MessageResponse:
+    def delete_proposal(
+        self,
+        proposal_id: int,
+        current_user: User
+    ) -> MessageResponse:
         proposal = self.proposals.get(proposal_id)
         if proposal is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proposal not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Proposal not found."
+            )
         ensure_deletion_allowed(proposal, current_user.id, utcnow())
         self.proposals.delete(proposal)
         return MessageResponse(message=f"Proposal {proposal_id} was deleted.")

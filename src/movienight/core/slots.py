@@ -31,12 +31,16 @@ def iter_week_slots(week_start: date) -> list[dict]:
                     "slot_date": slot_date,
                     "day_name": slot_date.strftime("%A"),
                     "day_label": slot_date.strftime("%a %d.%m"),
-                    "time_label": f"{start_at.strftime('%H:%M')}–{end_at.strftime('%H:%M')}",
+                    "time_label": (
+                        f"{start_at.strftime('%H:%M')}–"
+                        f"{end_at.strftime('%H:%M')}"
+                    ),
                     "start_at": start_at,
                     "end_at": end_at,
                     "display_label": (
                         f"{slot_date.strftime('%A %d.%m')} | "
-                        f"{start_at.strftime('%H:%M')}–{end_at.strftime('%H:%M')}"
+                        f"{start_at.strftime('%H:%M')}–"
+                        f"{end_at.strftime('%H:%M')}"
                     ),
                 }
             )
@@ -48,10 +52,17 @@ def is_fixed_two_hour_slot(starts_at: datetime, ends_at: datetime) -> bool:
     starts_at = as_utc(starts_at)
     ends_at = as_utc(ends_at)
 
-    if starts_at.minute != 0 or starts_at.second != 0 or starts_at.microsecond != 0:
+    if (
+        starts_at.minute != 0 or
+        starts_at.second != 0 or
+        starts_at.microsecond != 0
+    ):
         return False
 
     if starts_at.hour % SLOT_DURATION_HOURS != 0:
         return False
 
-    return ends_at - starts_at == timedelta(hours=SLOT_DURATION_HOURS)
+    return (
+        ends_at - starts_at ==
+        timedelta(hours=SLOT_DURATION_HOURS)
+    )

@@ -10,7 +10,12 @@ _MAX_DURATION_HOURS = 4
 _MAX_OVERLAPS = 5
 
 
-def overlaps(start_a: datetime, end_a: datetime, start_b: datetime, end_b: datetime) -> bool:
+def overlaps(
+    start_a: datetime,
+    end_a: datetime,
+    start_b: datetime,
+    end_b: datetime
+) -> bool:
     start_a = as_utc(start_a)
     end_a = as_utc(end_a)
     start_b = as_utc(start_b)
@@ -40,7 +45,11 @@ def should_show_reactions(starts_at: datetime, now: datetime) -> bool:
     return starts_at <= now + _LOCK_WINDOW
 
 
-def validate_proposal_time_bounds(starts_at: datetime, ends_at: datetime, now: datetime) -> None:
+def validate_proposal_time_bounds(
+    starts_at: datetime,
+    ends_at: datetime,
+    now: datetime
+) -> None:
     starts_at = as_utc(starts_at)
     ends_at = as_utc(ends_at)
     now = as_utc(now)
@@ -56,13 +65,14 @@ def validate_proposal_time_bounds(starts_at: datetime, ends_at: datetime, now: d
         _raise_bad_request("Proposal must last exactly 2 hours.")
 
     if (
-        starts_at.minute != 0
-        or starts_at.second != 0
-        or starts_at.microsecond != 0
-        or starts_at.hour % 2 != 0
+        starts_at.minute != 0 or
+        starts_at.second != 0 or
+        starts_at.microsecond != 0 or
+        starts_at.hour % 2 != 0
     ):
         _raise_bad_request(
-            "Proposal start time must match a 2-hour slot: 00:00, 02:00, 04:00, and so on."
+            "Proposal start time must match a 2-hour "
+            "slot: 00:00, 02:00, 04:00, and so on."
         )
 
 
@@ -75,8 +85,13 @@ def find_conflicts(
     return [
         proposal
         for proposal in proposals
-        if proposal.room == target_room
-        and overlaps(starts_at, ends_at, proposal.starts_at, proposal.ends_at)
+        if proposal.room == target_room and
+        overlaps(
+            starts_at,
+            ends_at,
+            proposal.starts_at,
+            proposal.ends_at
+        )
     ]
 
 
@@ -88,10 +103,25 @@ def ensure_creation_allowed(
     existing_room_proposals: list[Proposal],
     now: datetime,
 ) -> None:
-    conflicts = find_conflicts(room, starts_at, ends_at, existing_room_proposals)
-    ensure_not_duplicate(room, movie_title, starts_at, ends_at, conflicts)
+    conflicts = find_conflicts(
+        room,
+        starts_at,
+        ends_at,
+        existing_room_proposals
+    )
+    ensure_not_duplicate(
+        room,
+        movie_title,
+        starts_at,
+        ends_at,
+        conflicts
+    )
     ensure_not_too_many_conflicts(conflicts)
-    ensure_not_locked_window_creation(starts_at, conflicts, now)
+    ensure_not_locked_window_creation(
+        starts_at,
+        conflicts,
+        now
+    )
 
 
 def ensure_not_duplicate(
@@ -112,13 +142,17 @@ def ensure_not_duplicate(
             proposal.ends_at,
         ):
             _raise_bad_request(
-                "An overlapping proposal for the same room and movie already exists."
+                "An overlapping proposal for "
+                "the same room and movie already exists."
             )
 
 
 def ensure_not_too_many_conflicts(conflicts: list[Proposal]) -> None:
     if len(conflicts) >= _MAX_OVERLAPS:
-        _raise_bad_request("Too many overlapping proposals already exist in this room.")
+        _raise_bad_request(
+            "Too many overlapping proposals "
+            "already exist in this room."
+        )
 
 
 def ensure_not_locked_window_creation(
@@ -128,11 +162,16 @@ def ensure_not_locked_window_creation(
 ) -> None:
     if conflicts and is_vote_locked(starts_at, now):
         _raise_bad_request(
-            "A conflicting proposal cannot be created one hour or less before the start time."
+            "A conflicting proposal cannot "
+            "be created one hour or less before the start time."
         )
 
 
-def ensure_deletion_allowed(proposal: Proposal, current_user_id: int, now: datetime) -> None:
+def ensure_deletion_allowed(
+    proposal: Proposal,
+    current_user_id: int,
+    now: datetime
+) -> None:
     if proposal.creator_id != current_user_id:
         _raise_forbidden("You can delete only your own proposals.")
     if is_in_past(proposal.starts_at, now):
@@ -140,8 +179,14 @@ def ensure_deletion_allowed(proposal: Proposal, current_user_id: int, now: datet
 
 
 def _raise_bad_request(message: str) -> None:
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=message
+    )
 
 
 def _raise_forbidden(message: str) -> None:
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=message)
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=message
+    )

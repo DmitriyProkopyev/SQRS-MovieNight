@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
 
 from movienight.api.router import api_router
 from movienight.core.config import settings
@@ -39,6 +42,77 @@ def on_startup() -> None:
     initialize_database()
 
 
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
+        content={"detail": exc.errors()},
+    )
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    for path_item in openapi_schema.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+
+            responses = operation.get("responses", {})
+
+            if "400" not in responses:
+                responses["400"] = {
+                    "description": (
+                        "Bad Request. Validation failed "
+                        "for request path, "
+                        "query parameters, or body."
+                    ),
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "detail": [
+                                    {
+                                        "type": "string_too_short",
+                                        "loc": ["body", "username"],
+                                        "msg": (
+                                            "String should have "
+                                            "at least 3 characters"
+                                        ),
+                                        "input": "",
+                                        "ctx": {"min_length": 3},
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                }
+            else:
+                existing_400 = responses["400"]
+                existing_400.setdefault(
+                    "description",
+                    "Bad Request. Validation "
+                    "failed for request path, "
+                    "query parameters, or body.",
+                )
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
+
 @app.get(
     "/",
     summary="Root endpoint",
@@ -67,4 +141,9 @@ def health_check() -> dict[str, str]:
 def run() -> None:
     import uvicorn
 
-    uvicorn.run("movienight.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(
+        "movienight.main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+    )

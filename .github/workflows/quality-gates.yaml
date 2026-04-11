@@ -2,7 +2,9 @@ name: Quality Gates
 
 on:
   pull_request:
-    branches: [ main ]  # direct commits into main are restricted
+    branches:
+      - main
+      - dev
 
 jobs:
   pr-quality:
