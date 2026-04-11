@@ -30,8 +30,8 @@ def build_conflict_component(
         neighbors = [
             proposal
             for proposal in room_proposals
-            if proposal.id != current.id
-            and overlaps(
+            if proposal.id != current.id and
+            overlaps(
                 current.starts_at,
                 current.ends_at,
                 proposal.starts_at,

@@ -115,4 +115,4 @@ class AuthService:
         self.revoked_tokens.create(jti=jti, expires_at=expires_at)
         return MessageResponse(
             message=f"User '{user.username}' was logged out."
-            )
+        )
