@@ -159,9 +159,10 @@ def create_proposal(
 def delete_proposal(
     proposal_id: int,
     db: DbSession,
+    _: None = Depends(require_json_headers),
     user=Depends(get_current_user),
 ) -> MessageResponse:
     return ProposalService(db).delete_proposal(
         proposal_id=proposal_id,
-        current_user=user
+        current_user=user,
     )
