@@ -13,7 +13,7 @@ def build_room_schedule(
 ) -> RoomSchedule:
     room_proposals = proposals_for_room(proposals, room)
     slots = [
-        build_room_slot(slot, room_proposals)
+        build_room_slot(slot, room, room_proposals)
         for slot in week_slots
     ]
     return RoomSchedule(room=room, slots=slots)
@@ -28,6 +28,7 @@ def proposals_for_room(
 
 def build_room_slot(
     slot: dict,
+    room: str,
     room_proposals: list[Proposal],
 ):
     matching = find_matching_proposals(
@@ -36,4 +37,4 @@ def build_room_slot(
         end_at=slot["end_at"],
     )
     proposal_titles = [proposal.movie_title for proposal in matching]
-    return map_schedule_slot(slot, proposal_titles)
+    return map_schedule_slot(slot, room, proposal_titles)
