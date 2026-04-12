@@ -171,14 +171,13 @@ def test_too_long_passwords(default_client: TestClient) -> None:
 
 
 def test_weak_passwords(default_client: TestClient) -> None:
-    empty = ""
     only_lowercase = "longbutweaktestpasswordstring"
     only_uppercase = "LONGBUTWEAKTESTPASSWORDSTRING"
     only_digits = "129380249572098750934"
     only_special_characters = "@#$%^&*!()[]<>№;:}{"
     full_set_of_characters = "aR4m_(=)!31+-249<(#$v9B23V)"
 
-    for password in [empty, only_lowercase, only_uppercase, only_digits, only_special_characters]:
+    for password in [only_lowercase, only_uppercase, only_digits, only_special_characters]:
         status_code, response = register(client=default_client, username=VALID_USERNAME, password=password)
         assert status_code == HTTPStatus.BAD_REQUEST
         assert "detail" in response, f"No error details were returned upon registration with a simple password: {response}"

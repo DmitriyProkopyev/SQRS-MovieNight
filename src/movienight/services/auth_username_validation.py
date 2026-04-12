@@ -1,8 +1,9 @@
 from movienight.services.auth_username_charset import (
-    ensure_no_esoteric_characters,
-    ensure_no_forbidden_punctuation,
+    ensure_valid_username_charset,
 )
-from movienight.services.auth_username_length import ensure_username_length
+from movienight.services.auth_username_length import (
+    ensure_username_length,
+)
 
 
 def normalize_username(username: str) -> str:
@@ -11,5 +12,4 @@ def normalize_username(username: str) -> str:
 
 def ensure_valid_username(username: str) -> None:
     ensure_username_length(username)
-    ensure_no_esoteric_characters(username)
-    ensure_no_forbidden_punctuation(username)
+    ensure_valid_username_charset(username)

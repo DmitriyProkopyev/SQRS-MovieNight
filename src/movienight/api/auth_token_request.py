@@ -1,27 +1,17 @@
-from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
+
+from movienight.api.auth_compact_jwt import require_compact_jwt
+from movienight.api.auth_credentials_required import require_credentials
+from movienight.api.auth_scheme_guard import require_bearer_scheme
+from movienight.api.auth_token_presence import require_token_value
 
 
 def read_bearer_token(
     credentials: HTTPAuthorizationCredentials | None,
 ) -> str:
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Malformed authentication request.",
-        )
+    resolved = require_credentials(credentials)
+    require_bearer_scheme(resolved.scheme)
 
-    if credentials.scheme.lower() != "bearer":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Malformed authentication request.",
-        )
-
-    token = credentials.credentials.strip()
-    if not token or token.count(".") != 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Malformed authentication request.",
-        )
-
+    token = require_token_value(resolved.credentials)
+    require_compact_jwt(token)
     return token
