@@ -80,7 +80,7 @@ def test_malformed_requests(client_with_proposals_and_users) -> None:
     client, token, _ = client_with_proposals_and_users
 
     status_code, _ = delete_proposal(client, access_token=token, id=None)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_accept_types(client_with_proposals_and_users):
@@ -88,7 +88,7 @@ def test_wrong_accept_types(client_with_proposals_and_users):
 
     for accept_type in WRONG_CONTENT_TYPES:
         status_code, _ = delete_proposal(client, access_token=token, id=1, accept=accept_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_content_types(client_with_proposals_and_users) -> None:
@@ -96,4 +96,4 @@ def test_wrong_content_types(client_with_proposals_and_users) -> None:
 
     for accept_type in WRONG_CONTENT_TYPES:
         status_code, _ = delete_proposal(client, access_token=token, id=1, accept=accept_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST

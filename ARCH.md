@@ -721,7 +721,7 @@ The repository is wired for:
 - `radon`
 - `locust`
 
-These correspond directly to the project quality requirements and PM plan. fileciteturn5file0 fileciteturn5file1
+These correspond directly to the project quality requirements and PM plan.
 
 ---
 
