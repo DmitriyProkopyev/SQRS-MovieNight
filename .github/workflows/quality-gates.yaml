@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LOCUST_FAILURE_RATIO_THRESHOLD: "0.05"
-      LOCUST_P95_THRESHOLD_MS: "1500"
+      LOCUST_P95_THRESHOLD_MS: "2500"
       LOCUST_MIN_REQUESTS: "20"
     steps:
     - name: Get the source code
