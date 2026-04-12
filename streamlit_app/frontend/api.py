@@ -24,15 +24,28 @@ def _extract_error(response: requests.Response) -> str:
 
     if isinstance(payload, dict):
         detail = payload.get("detail")
+
         if isinstance(detail, str):
             return detail
+
+        if isinstance(detail, list) and detail:
+            first_error = detail[0]
+
+            if isinstance(first_error, dict):
+                message = first_error.get("msg")
+                location = first_error.get("loc")
+
+                if isinstance(message, str):
+                    if isinstance(location, list) and len(location) >= 2:
+                        field_name = location[-1]
+                        return f"Invalid value for '{field_name}': {message}"
+                    return message
 
         message = payload.get("message")
         if isinstance(message, str):
             return message
 
-    return str(payload)
-
+    return "Request failed."
 
 def request(
     method: str,

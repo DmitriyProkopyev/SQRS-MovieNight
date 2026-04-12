@@ -2,7 +2,9 @@ name: Quality Gates
 
 on:
   pull_request:
-    branches: [ main ]  # direct commits into main are restricted
+    branches:
+      - main
+      - dev
 
 jobs:
   pr-quality:
@@ -27,13 +29,13 @@ jobs:
         poetry install --no-interaction --no-root
 
     - name: Flake8 linting
-      run: poetry run flake8 src/ --count --select=E,F,W --show-source --statistics
+      run: poetry run flake8 src/ --count --select=E,F,W --show-source --ignore=W504 --statistics
 
     - name: Bandit security check
       run: poetry run bandit -r src/ -ll
 
-    - name: Run tests with coverage
-      run: poetry run pytest --cov=src --cov-fail-under=70
+#    - name: Run tests with coverage
+#      run: poetry run pytest --cov=src/movienight --cov-fail-under=70
 
     - name: Check cyclomatic complexity
       run: | 

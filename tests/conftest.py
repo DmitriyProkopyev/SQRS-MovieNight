@@ -1,4 +1,1 @@
-"""Test placeholders.
-
-This module is intentionally minimal because tests will be implemented by another teammate.
-"""
+from tests.auth.conftest import *  # noqa: F403
