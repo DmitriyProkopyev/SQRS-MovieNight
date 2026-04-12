@@ -116,7 +116,6 @@ jobs:
         poetry run uvicorn --app-dir src movienight.main:app --host 127.0.0.1 --port 8000 &
         SERVER_PID=$!
         sleep 3
-        cd ..
         
         poetry run locust -f load_tests.py --headless --host http://127.0.0.1:8000 -u 10 -r 2 --run-time 1m --csv=locust --logfile=/dev/null 2>&1
         
