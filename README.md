@@ -151,8 +151,6 @@ pip install -r requirements-dev.txt
 
 ## 6. Run the project
 
-You said you want to run it with **two commands**, so this is the cleanest workflow.
-
 ### Terminal 1 — backend
 
 ```bash
