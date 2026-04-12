@@ -13,6 +13,8 @@ from movienight.core.clock import utcnow
 from movienight.db.session import engine
 from movienight.core.config import settings
 
+from tests.conftest import construct_headers
+
 
 REGISTRATION_ENDPOINT = "/api/v1/auth/register"
 LOGIN_ENDPOINT = "/api/v1/auth/login"
@@ -23,21 +25,8 @@ VALID_USERNAME = "MyUniqueUsername"
 VALID_PASSWORD = "H224!lse_I89C*&-mn"
 VALID_USERNAME_2 = "Another_Valid_Username"
 VALID_PASSWORD_2 = "o;89(Pgp9--nw)_v2b!f"
-WRONG_CONTENT_TYPES = ["text/html", "text/plain", "text/css", "text/javascript",
-                          "application/xml", "application/pdf", "image/png", "image/jpeg",
-                          "audio/mpeg", "video/mp4", "multipart/form-data"]
-
-
-def _construct_headers(accept: str, content_type: str, access_token: str) -> Dict[str, str]:
-    headers = { }
-    if accept:
-        headers["accept"] = accept
-    if content_type:
-        headers["Content-Type"] = content_type
-    if access_token:
-        headers["Authorization"] = f"Bearer {access_token}"
-
-    return headers
+VALID_USERNAME_3 = "ThirdValidUser"
+VALID_PASSWORD_3 = "G00d!Password_3"
 
 
 def _construct_payload(username: str, password: str) -> Dict[str, str]:
@@ -60,7 +49,7 @@ def _b64url_encode(data: bytes) -> str:
 
 
 def register(client: TestClient, username: str, password: str, accept="application/json", content_type="application/json", access_token=None):
-    headers = _construct_headers(accept=accept, content_type=content_type, access_token=access_token)
+    headers = construct_headers(accept=accept, content_type=content_type, access_token=access_token)
     payload = _construct_payload(username=username, password=password)
     response = client.post(REGISTRATION_ENDPOINT, json=payload, headers=headers)
 
@@ -68,7 +57,7 @@ def register(client: TestClient, username: str, password: str, accept="applicati
 
 
 def login(client: TestClient, username: str, password: str, accept="application/json", content_type="application/json", access_token=None):
-    headers = _construct_headers(accept=accept, content_type=content_type, access_token=access_token)
+    headers = construct_headers(accept=accept, content_type=content_type, access_token=access_token)
     payload = _construct_payload(username=username, password=password)
     response = client.post(LOGIN_ENDPOINT, json=payload, headers=headers)
 
@@ -76,14 +65,14 @@ def login(client: TestClient, username: str, password: str, accept="application/
 
 
 def logout(client: TestClient, access_token, accept="application/json", content_type="application/json"):
-    headers = _construct_headers(accept=accept, content_type=content_type, access_token=access_token)
+    headers = construct_headers(accept=accept, content_type=content_type, access_token=access_token)
     response = client.post(LOGOUT_ENDPOINT, headers=headers)
 
     return response.status_code, response.json()
 
 
 def me(client: TestClient, access_token, accept="application/json", content_type="application/json"):
-    headers = _construct_headers(accept=accept, content_type=content_type, access_token=access_token)
+    headers = construct_headers(accept=accept, content_type=content_type, access_token=access_token)
     response = client.get(ME_ENDPOINT, headers=headers)
 
     return response.status_code, response.json()
@@ -111,7 +100,8 @@ def create_broken_access_token(subject: str = None,
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def forge_access_token(subject: str, subject_tamper: str = None, jti_tamper: str = None, issue_offset=0, expiration_offset=0, break_signature=False):
+def forge_access_token(subject: str, subject_tamper: str = None, jti_tamper: str = None,
+                       issue_offset=0, expiration_offset=0, break_signature=False):
     payload = {
         "sub": subject,
         "jti": str(uuid4()),
