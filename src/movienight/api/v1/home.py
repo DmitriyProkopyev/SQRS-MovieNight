@@ -11,9 +11,12 @@ router = APIRouter(prefix="/home", tags=["home"])
     "",
     summary="Get home page data",
     description=(
-        "Return grouped proposals for the main page, including room, time slot, voting state, "
-        "conflict metadata, winner information, and reaction visibility flags. "
-        "Snack reactions are returned only when they are actually visible and available."
+        "Return grouped proposals for the main page, "
+        "including room, time slot, voting state, "
+        "conflict metadata, winner information, "
+        "and reaction visibility flags. "
+        "Snack reactions are returned only when they "
+        "are actually visible and available."
     ),
     response_model=HomePageResponse,
     status_code=status.HTTP_200_OK,
@@ -21,5 +24,8 @@ router = APIRouter(prefix="/home", tags=["home"])
         401: {"description": "Authentication required."},
     },
 )
-def get_home(db: DbSession, user=Depends(get_current_user)) -> HomePageResponse:
+def get_home(
+    db: DbSession,
+    user=Depends(get_current_user)
+) -> HomePageResponse:
     return HomeService(db).get_home_page(current_user=user)

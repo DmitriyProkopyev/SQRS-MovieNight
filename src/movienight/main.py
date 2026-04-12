@@ -1,17 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from movienight.api.openapi_customizer import build_custom_openapi
 from movienight.api.router import api_router
+from movienight.api.validation_error_handler import (
+    request_validation_exception_handler,
+)
 from movienight.core.config import settings
 from movienight.db.init_db import initialize_database
+from fastapi.exceptions import RequestValidationError
 
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     description=(
-        "Movie Night backend API. "
-        "Use /api/v1/auth/login to get a JWT token. "
-        "Then use the token for protected endpoints or in the Streamlit GUI."
+        "Movie Night backend API. Use /api/v1/auth/login to get a JWT "
+        "token, then use it for protected endpoints or in Streamlit."
     ),
     docs_url="/docs",
     redoc_url="/redoc",
@@ -32,6 +36,10 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.add_exception_handler(
+    RequestValidationError,
+    request_validation_exception_handler,
+)
 
 
 @app.on_event("startup")
@@ -64,7 +72,19 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def custom_openapi():
+    return build_custom_openapi(app)
+
+
+app.openapi = custom_openapi
+
+
 def run() -> None:
     import uvicorn
 
-    uvicorn.run("movienight.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(
+        "movienight.main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+    )
