@@ -23,6 +23,9 @@ VALID_USERNAME = "MyUniqueUsername"
 VALID_PASSWORD = "H224!lse_I89C*&-mn"
 VALID_USERNAME_2 = "Another_Valid_Username"
 VALID_PASSWORD_2 = "o;89(Pgp9--nw)_v2b!f"
+WRONG_CONTENT_TYPES = ["text/html", "text/plain", "text/css", "text/javascript",
+                          "application/xml", "application/pdf", "image/png", "image/jpeg",
+                          "audio/mpeg", "video/mp4", "multipart/form-data"]
 
 
 def _construct_headers(accept: str, content_type: str, access_token: str) -> Dict[str, str]:
@@ -138,6 +141,9 @@ def forge_access_token(subject: str, subject_tamper: str = None, jti_tamper: str
 
 @pytest.fixture(scope="function")
 def default_client():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
     with TestClient(app, base_url="http://127.0.0.1:8000") as test_client:
         yield test_client
 
@@ -147,6 +153,9 @@ def default_client():
 
 @pytest.fixture(scope="module")
 def client_with_users():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
     with TestClient(app, base_url="http://127.0.0.1:8000") as test_client:
         register(client=test_client, username=VALID_USERNAME, password=VALID_PASSWORD)
         register(client=test_client, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
@@ -158,6 +167,9 @@ def client_with_users():
 
 @pytest.fixture(scope="function")
 def client_with_logged_in_user():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
     with TestClient(app, base_url="http://127.0.0.1:8000") as test_client:
         register(client=test_client, username=VALID_USERNAME, password=VALID_PASSWORD)
         register(client=test_client, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
