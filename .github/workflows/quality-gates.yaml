@@ -116,6 +116,7 @@ jobs:
         PY
 
     - name: Load test with Locust
+      if: always()
       run: |
         poetry run uvicorn --app-dir src movienight.main:app --host 127.0.0.1 --port 8000 &
         SERVER_PID=$!
@@ -133,6 +134,7 @@ jobs:
           --csv=locust
 
     - name: Validate Locust thresholds
+      if: always()
       run: |
         python3 - <<'PY'
         import csv
