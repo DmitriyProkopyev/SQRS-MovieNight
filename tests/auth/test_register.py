@@ -4,7 +4,9 @@ import string
 from fastapi.testclient import TestClient
 from http import HTTPStatus
 
-from tests.auth.conftest import register, REGISTRATION_ENDPOINT, VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2, WRONG_CONTENT_TYPES
+from tests.auth.conftest import register, REGISTRATION_ENDPOINT
+from tests.auth.conftest import VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2
+from tests.conftest import ESOTERIC_STRINGS, WRONG_CONTENT_TYPES
 
 
 def test_valid(default_client: TestClient) -> None:
@@ -110,17 +112,7 @@ def test_too_long_usernames(default_client: TestClient) -> None:
 
 
 def test_esoteric_usernames(default_client: TestClient) -> None:
-    cc_cstring = "user\x00"                         # NUL (Cc)
-    cf_left_to_right = "Hey my name is \u200E"      # LEFT‑TO‑RIGHT MARK (Cf)
-    cf_right_to_left = "Hey I am the ad\u200Fmin"   # RIGHT‑TO‑LEFT MARK (Cf)
-    cf_zero_width = "your friend\u200B"             # ZERO‑WIDTH SPACE (Cf)
-
-    co_private = "verifi\xE0\x80\x80ed"             # U+E000 (Co) in UTF‑8 bytes
-    cs_low = "mode\xED\xA0\x80rator"                # U+D800 (Cs) surrogate in UTF‑8
-    co_str = chr(0xE000) + "admin"                  # Private‑use char (Co)
-    cs_str = "admin" + chr(0xD800)                  # Low‑surrogate (Cs)
-
-    for username in [cc_cstring, cf_left_to_right, cf_right_to_left, cf_zero_width, co_private, cs_low, co_str, cs_str]:
+    for username in ESOTERIC_STRINGS:
         status_code, response = register(client=default_client, username=username, password=VALID_PASSWORD)
         assert status_code == HTTPStatus.BAD_REQUEST
         assert "detail" in response, f"No error details were returned upon registration of an esoteric username: {response}"
@@ -186,7 +178,7 @@ def test_personal_info_in_passwords(default_client: TestClient) -> None:
     assert response["detail"] == "Password cannot contain public personal information, such as username."
 
 
-def test_malformed_request(default_client: TestClient) -> None:
+def test_malformed_requests(default_client: TestClient) -> None:
     status_code, _ = register(client=default_client, username=None, password=VALID_PASSWORD)
     assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 

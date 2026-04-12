@@ -1,4 +1,4 @@
-from movienight.core.security import verify_password
+from movienight.core.password_hasher import verify_password
 from movienight.services.auth_invalid_credentials import (
     raise_invalid_credentials,
 )

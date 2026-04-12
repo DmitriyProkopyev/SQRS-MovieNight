@@ -1,7 +1,7 @@
 from movienight.api.auth_claims import extract_jti, extract_user_id
 from movienight.api.auth_revocation_guard import ensure_token_not_revoked
 from movienight.api.auth_user_loader import load_user_by_id
-from movienight.core.security import decode_access_token
+from movienight.core.jwt_decoder import decode_access_token
 
 
 def resolve_user_from_token(
