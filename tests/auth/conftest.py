@@ -3,14 +3,15 @@ import pytest
 import json
 import jwt
 
-from datetime import timedelta
 from fastapi.testclient import TestClient
+from typing import Dict
+from uuid import uuid4
+
 from movienight.main import app
 from movienight.db.base import Base
 from movienight.core.clock import utcnow
-from movienight.db.session import engine, settings
-from typing import Dict
-from uuid import uuid4
+from movienight.db.session import engine
+from movienight.core.config import settings
 
 
 REGISTRATION_ENDPOINT = "/api/v1/auth/register"
@@ -22,10 +23,6 @@ VALID_USERNAME = "MyUniqueUsername"
 VALID_PASSWORD = "H224!lse_I89C*&-mn"
 VALID_USERNAME_2 = "Another_Valid_Username"
 VALID_PASSWORD_2 = "o;89(Pgp9--nw)_v2b!f"
-
-WRONG_CONTENT_TYPES = ["text/html", "text/plain", "text/css", "text/javascript", 
-                          "application/xml", "application/pdf", "image/png", "image/jpeg",
-                          "audio/mpeg", "video/mp4", "multipart/form-data"]
 
 
 def _construct_headers(accept: str, content_type: str, access_token: str) -> Dict[str, str]:
