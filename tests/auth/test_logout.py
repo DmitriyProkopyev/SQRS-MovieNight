@@ -2,10 +2,11 @@ import uuid
 
 from http import HTTPStatus
 
-from movienight.core.security import decode_access_token
+from movienight.core.jwt_decoder import decode_access_token
 from movienight.core.clock import utcnow
-from tests.auth.conftest import LOGOUT_ENDPOINT, VALID_USERNAME, WRONG_CONTENT_TYPES
+from tests.auth.conftest import LOGOUT_ENDPOINT, VALID_USERNAME
 from tests.auth.conftest import logout, forge_access_token, create_broken_access_token
+from tests.conftest import WRONG_CONTENT_TYPES
 
 
 def test_valid(client_with_logged_in_user) -> None:

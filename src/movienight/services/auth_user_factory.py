@@ -1,5 +1,5 @@
 from movienight.core.clock import utcnow
-from movienight.core.security import hash_password
+from movienight.core.password_hasher import hash_password
 from movienight.db.models import User
 
 
