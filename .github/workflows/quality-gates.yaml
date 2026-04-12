@@ -9,6 +9,10 @@ on:
 jobs:
   pr-quality:
     runs-on: ubuntu-latest
+    env:
+      LOCUST_FAILURE_RATIO_THRESHOLD: "0.05"
+      LOCUST_P95_THRESHOLD_MS: "1500"
+      LOCUST_MIN_REQUESTS: "20"
     steps:
     - name: Get the source code
       uses: actions/checkout@v4
@@ -113,11 +117,85 @@ jobs:
 
     - name: Load test with Locust
       run: |
-        cd src && poetry run uvicorn movienight.main:app --host 127.0.0.1 --port 8000 &
+        poetry run uvicorn --app-dir src movienight.main:app --host 127.0.0.1 --port 8000 &
         SERVER_PID=$!
+        trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
         sleep 3
-        cd ..
-        
-        poetry run locust -f load_tests.py --headless --host http://127.0.0.1:8000 -u 10 -r 2 --run-time 1m --csv=locust --logfile=/dev/null 2>&1
-        
-        kill $SERVER_PID 2>/dev/null || true
+
+        poetry run locust \
+          -f load_tests.py \
+          --headless \
+          --only-summary \
+          --host http://127.0.0.1:8000 \
+          -u 10 \
+          -r 2 \
+          --run-time 1m \
+          --csv=locust
+
+    - name: Validate Locust thresholds
+      run: |
+        python3 - <<'PY'
+        import csv
+        import os
+        import sys
+        from pathlib import Path
+
+        stats_path = Path("locust_stats.csv")
+        if not stats_path.exists():
+            sys.exit("locust_stats.csv was not produced by Locust")
+
+        with stats_path.open(newline="", encoding="utf-8") as csv_file:
+            rows = list(csv.DictReader(csv_file))
+
+        aggregated = next(
+            (row for row in rows if row.get("Name") == "Aggregated"),
+            None,
+        )
+        if aggregated is None:
+            sys.exit("Aggregated Locust stats row was not found")
+
+        def read_float(row: dict[str, str], *names: str) -> float:
+            for name in names:
+                value = row.get(name)
+                if value not in (None, ""):
+                    return float(value)
+            raise KeyError(f"Missing metric column: {names}")
+
+        request_count = int(read_float(aggregated, "Request Count"))
+        failure_count = int(read_float(aggregated, "Failure Count"))
+        p95_ms = read_float(aggregated, "95%", "95")
+
+        failure_ratio = (
+            failure_count / request_count if request_count else 1.0
+        )
+        max_failure_ratio = float(
+            os.environ["LOCUST_FAILURE_RATIO_THRESHOLD"]
+        )
+        max_p95_ms = float(os.environ["LOCUST_P95_THRESHOLD_MS"])
+        min_requests = int(os.environ["LOCUST_MIN_REQUESTS"])
+
+        print(f"Locust aggregated requests: {request_count}")
+        print(f"Locust aggregated failures: {failure_count}")
+        print(f"Locust failure ratio: {failure_ratio:.4f}")
+        print(f"Locust p95 response time: {p95_ms:.2f} ms")
+
+        failures: list[str] = []
+        if request_count < min_requests:
+            failures.append(
+                f"Request count too low: {request_count} < {min_requests}"
+            )
+        if failure_ratio > max_failure_ratio:
+            failures.append(
+                "Failure ratio too high: "
+                f"{failure_ratio:.4f} > {max_failure_ratio:.4f}"
+            )
+        if p95_ms > max_p95_ms:
+            failures.append(
+                f"P95 response time too high: {p95_ms:.2f} > {max_p95_ms:.2f}"
+            )
+
+        if failures:
+            for failure in failures:
+                print(f"ERROR: {failure}")
+            sys.exit(1)
+        PY
