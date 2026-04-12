@@ -18,6 +18,7 @@ PyJWT = "^2.10.1"
 python-multipart = "^0.0.20"
 streamlit = "^1.56.0"
 requests = "^2.33.1"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

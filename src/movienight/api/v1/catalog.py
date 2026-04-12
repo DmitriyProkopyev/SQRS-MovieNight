@@ -12,7 +12,8 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
     summary="Get event catalog",
     description=(
         "Return all proposal cards for catalog browsing. "
-        "Unlike Home, this endpoint is focused on card-based navigation through all available events."
+        "Unlike Home, this endpoint is focused on card-based "
+        "navigation through all available events."
     ),
     response_model=HomePageResponse,
     status_code=status.HTTP_200_OK,

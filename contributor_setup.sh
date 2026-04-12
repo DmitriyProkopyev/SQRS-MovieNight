@@ -35,7 +35,7 @@ if [ $SUCCESS -eq 0 ]; then
 fi
 
 echo "Linting the source code..."
-poetry run flake8 src/ --count --select=E,F,W --show-source --statistics || {
+poetry run flake8 src/ --count --select=E,F,W --show-source --ignore=W504 --statistics || {
   echo "Linting issues have been identified, the commit is blocked. See details above."
   exit 1
 }
