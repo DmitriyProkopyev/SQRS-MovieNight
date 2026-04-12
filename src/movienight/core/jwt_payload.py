@@ -1,17 +1,20 @@
-from datetime import timedelta
-from uuid import uuid4
+from movienight.core.jwt_decoder import decode_access_token
+from movienight.core.jwt_encoder import encode_access_token
+from movienight.core.jwt_payload import build_access_token_payload
+from movienight.core.password_hasher import (
+    hash_password,
+    verify_password,
+)
 
-from movienight.core.clock import utcnow
-from movienight.core.config import settings
+
+def create_access_token(subject: str) -> str:
+    payload = build_access_token_payload(subject)
+    return encode_access_token(payload)
 
 
-def build_access_token_payload(subject: str) -> dict:
-    now = utcnow()
-    expires_at = now + timedelta(minutes=settings.jwt_expire_minutes)
-
-    return {
-        "sub": subject,
-        "iat": int(now.timestamp()),
-        "exp": int(expires_at.timestamp()),
-        "jti": str(uuid4()),
-    }
+__all__ = [
+    "create_access_token",
+    "decode_access_token",
+    "hash_password",
+    "verify_password",
+]

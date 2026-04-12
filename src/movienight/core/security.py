@@ -1,5 +1,10 @@
+from movienight.core.jwt_decoder import decode_access_token
 from movienight.core.jwt_encoder import encode_access_token
 from movienight.core.jwt_payload import build_access_token_payload
+from movienight.core.password_hasher import (
+    hash_password,
+    verify_password,
+)
 
 
 def create_access_token(subject: str) -> str:
