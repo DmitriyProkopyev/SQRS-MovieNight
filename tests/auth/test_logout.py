@@ -116,7 +116,7 @@ def test_many_with_same_token(client_with_logged_in_user) -> None:
 def test_malformed_request(client_with_logged_in_user) -> None:
     client, token = client_with_logged_in_user
     status_code, _ = logout(client=client, access_token=None)
-    assert status_code == HTTPStatus.BAD_REQUEST
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
     status_code, _ = logout(client=client, access_token=str(uuid.uuid4()))
     assert status_code == HTTPStatus.BAD_REQUEST

@@ -6,13 +6,15 @@ from movienight.api.auth_optional_user_loader import (
     load_optional_current_user,
 )
 from movienight.api.auth_repositories import build_auth_repositories
-from movienight.api.auth_user_resolver import resolve_auth_payload
 from movienight.db.session import get_db
+from movienight.api.auth_required_payload import (
+    resolve_required_auth_payload,
+)
 
 
 def get_current_user(
     db: Session = Depends(get_db),
-    payload: dict = Depends(resolve_auth_payload),
+    payload: dict = Depends(resolve_required_auth_payload),
 ):
     repositories = build_auth_repositories(db)
     return load_current_user(repositories, payload)
