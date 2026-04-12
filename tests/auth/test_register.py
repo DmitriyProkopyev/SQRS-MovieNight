@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from tests.auth.conftest import register, REGISTRATION_ENDPOINT
 from tests.auth.conftest import VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2
-from tests.conftest import ESOTERIC_STRINGS, WRONG_CONTENT_TYPES
+from tests.conftest import WRONG_CONTENT_TYPES
 
 
 def test_valid(default_client: TestClient) -> None:

@@ -1,4 +1,5 @@
-from tests.auth.conftest import *  # noqa: F403
+from typing import Dict
+
 
 _cc_cstring = "user\x00"                         # NUL (Cc)
 _cf_left_to_right = "Hey my name is \u200E"      # LEFT‑TO‑RIGHT MARK (Cf)
@@ -11,3 +12,15 @@ ESOTERIC_STRINGS = [_cc_cstring, _cf_left_to_right, _cf_right_to_left,
 WRONG_CONTENT_TYPES = ["text/html", "text/plain", "text/css", "text/javascript",
                           "application/xml", "application/pdf", "image/png", "image/jpeg",
                           "audio/mpeg", "video/mp4", "multipart/form-data"]
+
+
+def construct_headers(accept: str, content_type: str, access_token: str) -> Dict[str, str]:
+    headers = { }
+    if accept:
+        headers["accept"] = accept
+    if content_type:
+        headers["Content-Type"] = content_type
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+
+    return headers

@@ -227,7 +227,8 @@ def test_overlap_too_many_proposals(client_with_logged_in_users) -> None:
     assert response["detail"] == "Too many overlapping proposals already exist in this room."
 
 
-def test_starts_too_soon(default_client) -> None:
+def test_starts_too_soon(client_with_logged_in_users) -> None:
+    client, _, _ = client_with_logged_in_users
 
     real_now = datetime.now()
     start, end = next_suitable_timeslot(
@@ -236,20 +237,16 @@ def test_starts_too_soon(default_client) -> None:
     frozen_now = start - timedelta(minutes=30)
 
     with freeze_time(frozen_now):
-        register(
-            client=default_client,
-            username=VALID_USERNAME,
-            password=VALID_PASSWORD,
-        )
+        
         _, login_response = login(
-            client=default_client,
+            client=client,
             username=VALID_USERNAME,
             password=VALID_PASSWORD,
         )
         token = login_response["access_token"]
 
         status_code, response = create_proposal(
-            default_client,
+            client,
             access_token=token,
             starts_at=start,
             ends_at=end,
