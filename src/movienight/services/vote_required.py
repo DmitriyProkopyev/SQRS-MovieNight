@@ -9,7 +9,7 @@ def require_vote(
     vote = votes_repo.find_by_user_and_proposal(user_id, proposal_id)
     if vote is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Vote not found.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No vote to remove.",
         )
     return vote

@@ -39,6 +39,20 @@ def add_vote(
     )
     return response.status_code, response.json()
 
+def remove_vote(
+    client: TestClient,
+    proposal_id: int,
+    access_token: str | None,
+):
+    headers = {"accept": "application/json"}
+    if access_token is not None:
+        headers["Authorization"] = f"Bearer {access_token}"
+
+    response = client.delete(
+        VOTE_ENDPOINT_TEMPLATE.format(proposal_id=proposal_id),
+        headers=headers,
+    )
+    return response.status_code, response.json()
 
 def fresh_token(
     client: TestClient,
@@ -293,4 +307,162 @@ def test_vote_for_missing_proposal_and_without_auth_is_rejected(
         access_token=None,
     )
     assert status_code == HTTPStatus.UNAUTHORIZED
+    assert response["detail"] == "Authentication required."
+
+def test_valid_remove_vote_and_counter_decrease(
+    client_with_three_logged_in_users,
+) -> None:
+    client, token_1, token_2, token_3 = client_with_three_logged_in_users
+    start, end = next_suitable_timeslot()
+
+    _, proposal = create_proposal(
+        client=client,
+        access_token=token_1,
+        starts_at=start,
+        ends_at=end,
+        movie_title="The Matrix",
+        room="Room A",
+    )
+    proposal_id = proposal["id"]
+
+    status_code, response = add_vote(
+        client=client,
+        proposal_id=proposal_id,
+        access_token=token_2,
+    )
+    assert status_code == HTTPStatus.CREATED
+    assert response["votes_count"] == 1
+
+    status_code, response = add_vote(
+        client=client,
+        proposal_id=proposal_id,
+        access_token=token_3,
+    )
+    assert status_code == HTTPStatus.CREATED
+    assert response["votes_count"] == 2
+
+    status_code, response = remove_vote(
+        client=client,
+        proposal_id=proposal_id,
+        access_token=token_2,
+    )
+    assert status_code == HTTPStatus.OK
+    assert response["proposal_id"] == proposal_id
+    assert response["votes_count"] == 1
+    assert response["message"] == "Vote removed."
+
+
+def test_remove_vote_without_existing_vote_is_rejected(
+    client_with_three_logged_in_users,
+) -> None:
+    client, token_1, token_2, _ = client_with_three_logged_in_users
+    start, end = next_suitable_timeslot()
+
+    _, proposal = create_proposal(
+        client=client,
+        access_token=token_1,
+        starts_at=start,
+        ends_at=end,
+        movie_title="Inception",
+        room="Room A",
+    )
+
+    status_code, response = remove_vote(
+        client=client,
+        proposal_id=proposal["id"],
+        access_token=token_2,
+    )
+    assert status_code == HTTPStatus.BAD_REQUEST
+    assert "detail" in response
+    assert response["detail"] == "No vote to remove."
+
+
+def test_remove_vote_is_rejected_in_final_hour_and_after_start(
+    client_with_three_logged_in_users,
+) -> None:
+    client, token_1, token_2, _ = client_with_three_logged_in_users
+    start, end = next_suitable_timeslot()
+
+    _, proposal = create_proposal(
+        client=client,
+        access_token=token_1,
+        starts_at=start,
+        ends_at=end,
+        movie_title="Interstellar",
+        room="Room A",
+    )
+    proposal_id = proposal["id"]
+
+    status_code, _ = add_vote(
+        client=client,
+        proposal_id=proposal_id,
+        access_token=token_2,
+    )
+    assert status_code == HTTPStatus.CREATED
+
+    with freeze_time(start - timedelta(hours=1)):
+        refreshed_token = fresh_token(
+            client,
+            VALID_USERNAME_2,
+            VALID_PASSWORD_2,
+        )
+        status_code, response = remove_vote(
+            client=client,
+            proposal_id=proposal_id,
+            access_token=refreshed_token,
+        )
+        assert status_code == HTTPStatus.BAD_REQUEST
+        assert "detail" in response
+        assert response["detail"] == (
+            "Vote cancellation is not allowed for this proposal anymore."
+        )
+
+    with freeze_time(start + timedelta(minutes=1)):
+        refreshed_token = fresh_token(
+            client,
+            VALID_USERNAME_2,
+            VALID_PASSWORD_2,
+        )
+        status_code, response = remove_vote(
+            client=client,
+            proposal_id=proposal_id,
+            access_token=refreshed_token,
+        )
+        assert status_code == HTTPStatus.BAD_REQUEST
+        assert "detail" in response
+        assert response["detail"] == (
+            "Vote cancellation is not allowed for this proposal anymore."
+        )
+
+
+def test_remove_vote_without_auth_is_rejected(
+    client_with_three_logged_in_users,
+) -> None:
+    client, token_1, token_2, _ = client_with_three_logged_in_users
+    start, end = next_suitable_timeslot()
+
+    _, proposal = create_proposal(
+        client=client,
+        access_token=token_1,
+        starts_at=start,
+        ends_at=end,
+        movie_title="Arrival",
+        room="Room A",
+    )
+    proposal_id = proposal["id"]
+
+    status_code, _ = add_vote(
+        client=client,
+        proposal_id=proposal_id,
+        access_token=token_2,
+    )
+    assert status_code == HTTPStatus.CREATED
+
+    status_code, response = remove_vote(
+        client=client,
+        proposal_id=proposal_id,
+        access_token=None,
+    )
+    assert status_code == HTTPStatus.UNAUTHORIZED
+    assert "detail" in response
     assert response["detail"] == "Authentication required."
