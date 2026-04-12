@@ -4,6 +4,7 @@ from movienight.api.deps import DbSession, get_current_user
 from movienight.schemas.auth import MessageResponse
 from movienight.schemas.proposal import CreateProposalRequest, ProposalResponse
 from movienight.services.proposal_service import ProposalService
+from movienight.api.auth_json_headers import require_json_headers
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
 
@@ -96,6 +97,7 @@ router = APIRouter(prefix="/proposals", tags=["proposals"])
 def create_proposal(
     payload: CreateProposalRequest,
     db: DbSession,
+    _: None = Depends(require_json_headers),
     user=Depends(get_current_user),
 ) -> ProposalResponse:
     return ProposalService(db).create_proposal(

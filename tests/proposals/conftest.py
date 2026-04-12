@@ -28,29 +28,50 @@ def next_suitable_timeslot(after: datetime = None) -> datetime:
     return start, end
 
 
-def create_proposal(client: TestClient,
-                    access_token: str,
-                    starts_at: datetime,
-                    ends_at: datetime,
-                    movie_title: str,
-                    room: str,
-                    accept: str = "application/json",
-                    content_type: str = "application/json"):
-    headers = _construct_headers(accept=accept, content_type=content_type, access_token=access_token)
+def create_proposal(
+    client,
+    access_token,
+    starts_at,
+    ends_at,
+    movie_title,
+    room,
+    accept="application/json",
+    content_type="application/json",
+):
+    headers = {
+        "accept": accept,
+        "Content-Type": content_type,
+    }
 
-    payload = { }
-    if starts_at:
-        payload["starts_at"] = str(starts_at)
-    if ends_at:
-        payload["ends_at"] = str(ends_at)
-    if movie_title:
-        payload["movie_title"] = movie_title
-    if room:
-        payload["room"] = room
+    if access_token is not None:
+        headers["Authorization"] = f"Bearer {access_token}"
 
-    response = client.post(PROPOSAL_ENDPOINT, json=payload, headers=headers)
-    return response.status_code, response.json()
+    payload = {
+        "starts_at": str(starts_at),
+        "ends_at": str(ends_at),
+        "movie_title": movie_title,
+        "room": room,
+    }
 
+    if content_type == "application/json":
+        response = client.post(
+            PROPOSAL_ENDPOINT,
+            json=payload,
+            headers=headers,
+        )
+    else:
+        response = client.post(
+            PROPOSAL_ENDPOINT,
+            data=b"not-json",
+            headers=headers,
+        )
+
+    try:
+        body = response.json()
+    except Exception:
+        body = {}
+
+    return response.status_code, body
 
 def delete_proposal(client: TestClient,
                     access_token: str,

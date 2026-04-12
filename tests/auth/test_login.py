@@ -16,10 +16,10 @@ def test_valid(client_with_users: TestClient) -> None:
     assert "access_token" in response, f"Login returned no access token: {response}"
     assert "token_type" in response, f"Login returned no token type: {response}"
     assert "user" in response, f"Login returned no user data: {response}"
-    assert "id" in response["user"], f"Login returned no id in user data: {response["user"]}"
-    assert "username" in response["user"], f"Login returned no username in user data: {response["user"]}"
+    assert "id" in response["user"], f"Login returned no id in user data: {response['user']}"
+    assert "username" in response["user"], f"Login returned no username in user data: {response['user']}"
 
-    assert response["token_type"] == "bearer", f"Login returned wrong token type: {response["token_type"]}"
+    assert response["token_type"] == "bearer", f"Login returned wrong token type: {response['token_type']}"
     assert response["user"]["username"] == VALID_USERNAME
 
     status_code, response2 = login(client_with_users, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
@@ -28,13 +28,13 @@ def test_valid(client_with_users: TestClient) -> None:
     assert response["access_token"] != response2["access_token"]
 
     header = jwt.get_unverified_header(response["access_token"])
-    assert header["alg"] == "HS256", f"Unexpected algorithm in a JWT token: {header["alg"]}"
-    assert header["typ"] == "JWT", f"Unexpected token type: {header["type"]}"
+    assert header["alg"] == "HS256", f"Unexpected algorithm in a JWT token: {header['alg']}"
+    assert header["typ"] == "JWT", f"Unexpected token type: {header['type']}"
     
     payload1 = decode_access_token(response["access_token"])
     payload2 = decode_access_token(response2["access_token"])
-    assert int(payload1["sub"]) == int(response["user"]["id"]), f"JWT token payload refers to the wrong user: {payload1["sub"]}"
-    assert payload1["jti"] != payload2["jti"], f"Logging into different accounts returns identical token ids: {payload1["jti"]}"
+    assert int(payload1["sub"]) == int(response["user"]["id"]), f"JWT token payload refers to the wrong user: {payload1['sub']}"
+    assert payload1["jti"] != payload2["jti"], f"Logging into different accounts returns identical token ids: {payload1['jti']}"
 
     now = time.time()
     issued_at = int(payload1["iat"])
@@ -114,25 +114,25 @@ def test_while_logged_in_as_a_different_user(client_with_users: TestClient) -> N
 
 def test_malformed_request(client_with_users: TestClient) -> None:
     status_code, _ = login(client=client_with_users, username=None, password=VALID_PASSWORD)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = login(client=client_with_users, username=VALID_USERNAME, password=None)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = login(client=client_with_users, username=None, password=None)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_accept_types(client_with_users: TestClient):
     for accept_type in WRONG_CONTENT_TYPES:
         status_code, _ = login(client=client_with_users, username=VALID_USERNAME, password=VALID_PASSWORD, accept=accept_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_content_types(client_with_users: TestClient) -> None:
     for content_type in WRONG_CONTENT_TYPES:
         status_code, _ = login(client=client_with_users, username=VALID_USERNAME, password=VALID_PASSWORD, content_type=content_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_http_methods(client_with_users: TestClient) -> None:

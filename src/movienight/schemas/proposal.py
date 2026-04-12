@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class CreateProposalRequest(BaseModel):
     room: str = Field(min_length=1, max_length=100)
-    movie_title: str = Field(min_length=1, max_length=255)
+    movie_title: str = Field(min_length=1)
     starts_at: datetime
     ends_at: datetime
 

@@ -6,8 +6,20 @@ from movienight.services.proposal_conflict_validation import (
 from movienight.services.proposal_response_builder import (
     build_created_proposal_response,
 )
+from movienight.services.proposal_room_validation import (
+    ensure_existing_room,
+)
 from movienight.services.proposal_time_validation import (
     validate_proposal_time_bounds,
+)
+from movienight.services.proposal_title_charset import (
+    ensure_printable_movie_title,
+)
+from movienight.services.proposal_title_length import (
+    ensure_movie_title_length,
+)
+from movienight.services.proposal_title_normalization import (
+    normalize_movie_title,
 )
 
 
@@ -26,10 +38,16 @@ def create_proposal_use_case(
         now=now,
     )
 
-    room_proposals = proposals_repo.list_by_room(payload.room)
+    movie_title = normalize_movie_title(payload.movie_title)
+    ensure_printable_movie_title(movie_title)
+    ensure_movie_title_length(movie_title)
+
+    room = ensure_existing_room(payload.room)
+    room_proposals = proposals_repo.list_by_room(room)
+
     ensure_creation_allowed(
-        room=payload.room,
-        movie_title=payload.movie_title,
+        room=room,
+        movie_title=movie_title,
         starts_at=starts_at,
         ends_at=ends_at,
         existing_room_proposals=room_proposals,
@@ -39,8 +57,8 @@ def create_proposal_use_case(
     proposal = proposals_repo.create(
         Proposal(
             creator_id=current_user.id,
-            room=payload.room,
-            movie_title=payload.movie_title,
+            room=room,
+            movie_title=movie_title,
             starts_at=starts_at,
             ends_at=ends_at,
             created_at=now,

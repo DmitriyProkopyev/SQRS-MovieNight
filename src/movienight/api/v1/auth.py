@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Security, status
 from fastapi.security import HTTPAuthorizationCredentials
+from movienight.api.auth_json_headers import require_json_headers
 
 from movienight.api.deps import (
     DbSession,
@@ -18,7 +19,11 @@ from movienight.schemas.auth import (
 )
 from movienight.services.auth_service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+    dependencies=[Depends(require_json_headers)],
+)
 
 
 @router.post(

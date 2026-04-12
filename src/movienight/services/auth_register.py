@@ -1,3 +1,6 @@
+from movienight.services.auth_password_validation import (
+    ensure_valid_password,
+)
 from movienight.services.auth_register_guard import (
     ensure_registration_allowed,
 )
@@ -9,6 +12,7 @@ from movienight.services.auth_user_factory import (
     build_user_for_registration,
 )
 from movienight.services.auth_username_validation import (
+    ensure_valid_username,
     normalize_username,
 )
 
@@ -21,6 +25,8 @@ def register_user(
     ensure_registration_allowed(current_user)
 
     username = normalize_username(payload.username)
+    ensure_valid_username(username)
+    ensure_valid_password(payload.password, username)
     ensure_username_available(users_repo, username)
 
     user = users_repo.create(
