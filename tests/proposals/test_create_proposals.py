@@ -5,7 +5,12 @@ from http import HTTPStatus
 from movienight.core.jwt_decoder import decode_access_token
 from tests.proposals.conftest import create_proposal, next_suitable_timeslot, PROPOSAL_ENDPOINT
 from tests.conftest import ESOTERIC_STRINGS, WRONG_CONTENT_TYPES
-
+from tests.auth.conftest import (
+        login,
+        register,
+        VALID_PASSWORD,
+        VALID_USERNAME,
+    )
 
 VALID_MOVIE_TITLE = "Interstellar"
 VALID_ROOM = "Room A"
@@ -233,20 +238,42 @@ def test_overlap_too_many_proposals(client_with_logged_in_users) -> None:
     assert response["detail"] == "Too many overlapping proposals already exist in this room."
 
 
-# @freeze_time("2026-04-12 13:50:10")
-# def test_starts_too_soon(client_with_logged_in_users) -> None:
-#     client, token, _ = client_with_logged_in_users
-#     start, end = next_suitable_timeslot(datetime.now() - timedelta(hours=1))
+def test_starts_too_soon(default_client) -> None:
 
-#     status_code, response = create_proposal(client,
-#                                             access_token=token,
-#                                             starts_at=start,
-#                                             ends_at=end,
-#                                             movie_title=VALID_MOVIE_TITLE,
-#                                             room=VALID_ROOM)
-#     assert status_code == HTTPStatus.BAD_REQUEST
-#     assert "detail" in response, f"No error details were returned upon creating a proposal starting in less than an hour: {response}"
-#     assert response["detail"] == "New proposals should start later than an hour away."
+    real_now = datetime.now()
+    start, end = next_suitable_timeslot(
+        real_now + timedelta(hours=1, minutes=1)
+    )
+    frozen_now = start - timedelta(minutes=30)
+
+    with freeze_time(frozen_now):
+        register(
+            client=default_client,
+            username=VALID_USERNAME,
+            password=VALID_PASSWORD,
+        )
+        _, login_response = login(
+            client=default_client,
+            username=VALID_USERNAME,
+            password=VALID_PASSWORD,
+        )
+        token = login_response["access_token"]
+
+        status_code, response = create_proposal(
+            default_client,
+            access_token=token,
+            starts_at=start,
+            ends_at=end,
+            movie_title=VALID_MOVIE_TITLE,
+            room=VALID_ROOM,
+        )
+
+    assert status_code == HTTPStatus.BAD_REQUEST
+    assert "detail" in response, (
+        "No error details were returned upon creating a proposal "
+        f"starting in less than an hour: {response}"
+    )
+    assert response["detail"] == "New proposals should start later than an hour away."
 
 
 def test_not_authenticated(client_with_logged_in_users) -> None:
