@@ -4,6 +4,7 @@ from movienight.api.deps import DbSession, get_current_user
 from movienight.schemas.auth import MessageResponse
 from movienight.schemas.proposal import CreateProposalRequest, ProposalResponse
 from movienight.services.proposal_service import ProposalService
+from movienight.api.auth_json_headers import require_json_headers
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
 
@@ -12,8 +13,10 @@ router = APIRouter(prefix="/proposals", tags=["proposals"])
     "",
     summary="Create screening proposal",
     description=(
-        "Create a new movie screening proposal for a room and a fixed 2-hour time slot. "
-        "The proposal is accepted only if it passes all scheduling and conflict validation rules."
+        "Create a new movie screening proposal for "
+        "a room and a fixed 2-hour time slot. "
+        "The proposal is accepted only if it passes "
+        "all scheduling and conflict validation rules."
     ),
     response_model=ProposalResponse,
     status_code=status.HTTP_201_CREATED,
@@ -40,24 +43,41 @@ router = APIRouter(prefix="/proposals", tags=["proposals"])
                     "examples": {
                         "invalid_slot": {
                             "summary": "Invalid slot length",
-                            "value": {"detail": "Proposal must last exactly 2 hours."},
+                            "value": {
+                                "detail": (
+                                    "Proposal must last "
+                                    "exactly 2 hours."
+                                )
+                            },
                         },
                         "invalid_start": {
                             "summary": "Invalid slot boundary",
                             "value": {
-                                "detail": "Proposal start time must match a 2-hour slot: 00:00, 02:00, 04:00, and so on."
+                                "detail": (
+                                    "Proposal start time must match "
+                                    "a 2-hour slot: 00:00, 02:00, 04:00, "
+                                    "and so on."
+                                )
                             },
                         },
                         "duplicate_overlap": {
                             "summary": "Same room + same movie overlap",
                             "value": {
-                                "detail": "An overlapping proposal for the same room and movie already exists."
+                                "detail": (
+                                    "An overlapping proposal "
+                                    "for the same room and "
+                                    "movie already exists."
+                                )
                             },
                         },
                         "locked_conflict": {
                             "summary": "Conflict too close to start",
                             "value": {
-                                "detail": "A conflicting proposal cannot be created one hour or less before the start time."
+                                "detail": (
+                                    "A conflicting proposal cannot "
+                                    "be created one hour or less "
+                                    "before the start time."
+                                )
                             },
                         },
                     }
@@ -77,15 +97,22 @@ router = APIRouter(prefix="/proposals", tags=["proposals"])
 def create_proposal(
     payload: CreateProposalRequest,
     db: DbSession,
+    _: None = Depends(require_json_headers),
     user=Depends(get_current_user),
 ) -> ProposalResponse:
-    return ProposalService(db).create_proposal(payload=payload, current_user=user)
+    return ProposalService(db).create_proposal(
+        payload=payload,
+        current_user=user,
+    )
 
 
 @router.delete(
     "/{proposal_id}",
     summary="Delete own proposal",
-    description="Delete the current user's proposal if deletion is still allowed.",
+    description=(
+        "Delete the current user's proposal "
+        "if deletion is still allowed."
+    ),
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     responses={
@@ -99,14 +126,24 @@ def create_proposal(
         400: {
             "content": {
                 "application/json": {
-                    "example": {"detail": "Past proposals cannot be deleted."}
+                    "example": {
+                        "detail": (
+                            "Past proposals cannot "
+                            "be deleted."
+                        )
+                    }
                 }
             }
         },
         403: {
             "content": {
                 "application/json": {
-                    "example": {"detail": "You can delete only your own proposals."}
+                    "example": {
+                        "detail": (
+                            "You can delete only your "
+                            "own proposals."
+                        )
+                    }
                 }
             }
         },
@@ -122,6 +159,10 @@ def create_proposal(
 def delete_proposal(
     proposal_id: int,
     db: DbSession,
+    _: None = Depends(require_json_headers),
     user=Depends(get_current_user),
 ) -> MessageResponse:
-    return ProposalService(db).delete_proposal(proposal_id=proposal_id, current_user=user)
+    return ProposalService(db).delete_proposal(
+        proposal_id=proposal_id,
+        current_user=user,
+    )

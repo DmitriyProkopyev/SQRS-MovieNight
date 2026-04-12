@@ -16,8 +16,25 @@ from frontend.config import EMOJI_BY_CATEGORY, FOOD_CATEGORIES
 from frontend.state import clear_flash, init_state, is_authenticated, set_flash
 
 
+def inject_base_css() -> None:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+
+        [data-testid="stSidebarNavSeparator"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def init_app_shell() -> None:
     init_state()
+    inject_base_css()
     refresh_current_user()
 
 

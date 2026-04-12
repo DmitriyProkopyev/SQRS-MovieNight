@@ -2,7 +2,9 @@ name: Quality Gates
 
 on:
   pull_request:
-    branches: [ main ]  # direct commits into main are restricted
+    branches:
+      - main
+      - dev
 
 jobs:
   pr-quality:
@@ -27,13 +29,13 @@ jobs:
         poetry install --no-interaction --no-root
 
     - name: Flake8 linting
-      run: poetry run flake8 src/ --count --select=E,F,W --show-source --statistics
+      run: poetry run flake8 src/ --count --select=E,F,W --show-source --ignore=W504 --statistics
 
     - name: Bandit security check
       run: poetry run bandit -r src/ -ll
 
     - name: Run tests with coverage
-      run: poetry run pytest --cov=src --cov-fail-under=70
+      run: poetry run pytest tests/ --cov=movienight --cov-fail-under=70 --cov-report=term-missing
 
     - name: Check cyclomatic complexity
       run: | 
@@ -109,12 +111,12 @@ jobs:
             sys.exit(f"Maintainability index too low: {min_mi:.2f} < {threshold:.2f}")
         PY
 
-#    - name: Load test with Locust
-#      run: |
-#        locust_output=$(poetry run locust -f load_tests.py --headless -u 10 -r 2 --run-time 1m --csv=locust --logfile=/dev/null 2>&1 || true)
-#        p95=$(grep -A 20 "Aggregated" <<< "$locust_output" | grep "P95" | head -1 | awk '{print $3}')
-#        if (( $(echo "$p95 > 250" | bc -l) )); then
-#          echo "P95 latency: $p95 ms > 250ms - FAIL"
-#          exit 1
-#        fi
-#        echo "P95 latency: $p95 ms <= 250ms - PASS"
+    - name: Load test with Locust
+      run: |
+        poetry run uvicorn --app-dir src movienight.main:app --host 127.0.0.1 --port 8000 &
+        SERVER_PID=$!
+        sleep 3
+        
+        poetry run locust -f load_tests.py --headless --host http://127.0.0.1:8000 -u 10 -r 2 --run-time 1m --csv=locust --logfile=/dev/null 2>&1
+        
+        kill $SERVER_PID 2>/dev/null || true

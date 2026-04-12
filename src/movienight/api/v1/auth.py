@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Security, status
 from fastapi.security import HTTPAuthorizationCredentials
+from movienight.api.auth_json_headers import require_json_headers
 
 from movienight.api.deps import (
     DbSession,
@@ -18,14 +19,19 @@ from movienight.schemas.auth import (
 )
 from movienight.services.auth_service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+    dependencies=[Depends(require_json_headers)],
+)
 
 
 @router.post(
     "/login",
     summary="Sign in user",
     description=(
-        "Authenticate a user with username and password and return a JWT access token. "
+        "Authenticate a user with username and "
+        "password and return a JWT access token. "
         "If the user is already authenticated, login must be rejected."
     ),
     response_model=LoginResponse,
@@ -55,7 +61,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
             "description": "Invalid username or password.",
             "content": {
                 "application/json": {
-                    "example": {"detail": "Введен неверный логин или пароль."}
+                    "example": {"detail": "Invalid login or password."}
                 }
             },
         },
@@ -73,7 +79,8 @@ def login(
     "/register",
     summary="Create user account",
     description=(
-        "Create a new user account and immediately return a JWT access token for the created user."
+        "Create a new user account and immediately "
+        "return a JWT access token for the created user."
     ),
     response_model=LoginResponse,
     status_code=status.HTTP_201_CREATED,
@@ -97,7 +104,9 @@ def login(
                     "examples": {
                         "already_authenticated": {
                             "summary": "Already authenticated",
-                            "value": {"detail": "Log out before creating a new account."},
+                            "value": {"detail": (
+                                "Log out before "
+                                "creating a new account.")},
                         },
                         "username_taken": {
                             "summary": "Username already taken",

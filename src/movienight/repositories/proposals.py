@@ -1,43 +1,39 @@
-from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import joinedload
+
 from movienight.db.models import Proposal
+from movienight.repositories.proposal_lookup import (
+    get_proposal,
+    list_all_proposals,
+    list_proposals_by_creator_id,
+    list_proposals_by_room,
+)
+from movienight.repositories.proposal_write import (
+    create_proposal,
+    delete_proposal,
+)
 
 
 class ProposalRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def create(self, proposal: Proposal) -> Proposal:
-        self.db.add(proposal)
-        self.db.commit()
-        self.db.refresh(proposal)
-        return proposal
-
     def get(self, proposal_id: int) -> Proposal | None:
-        return self.db.get(Proposal, proposal_id)
+        return get_proposal(self.db, proposal_id)
 
-    def list_all(self) -> list[Proposal]:
-        statement = select(Proposal).order_by(Proposal.starts_at, Proposal.created_at)
-        return list(self.db.scalars(statement).all())
-
-    def list_by_room(self, room: str) -> list[Proposal]:
-        statement = (
-            select(Proposal)
-            .where(Proposal.room == room)
-            .order_by(Proposal.starts_at, Proposal.created_at)
-        )
-        return list(self.db.scalars(statement).all())
+    def create(self, proposal: Proposal) -> Proposal:
+        return create_proposal(self.db, proposal)
 
     def delete(self, proposal: Proposal) -> None:
-        self.db.execute(delete(Proposal).where(Proposal.id == proposal.id))
-        self.db.commit()
+        delete_proposal(self.db, proposal)
 
-    def list_by_creator_id(self, creator_id: int) -> list[Proposal]:
-        statement = (
-            select(Proposal)
-            .options(joinedload(Proposal.creator))
-            .where(Proposal.creator_id == creator_id)
-            .order_by(Proposal.starts_at, Proposal.created_at, Proposal.id)
-        )
-        return list(self.db.scalars(statement))
+    def list_all(self) -> list[Proposal]:
+        return list_all_proposals(self.db)
+
+    def list_by_room(self, room: str) -> list[Proposal]:
+        return list_proposals_by_room(self.db, room)
+
+    def list_by_creator_id(
+        self,
+        creator_id: int,
+    ) -> list[Proposal]:
+        return list_proposals_by_creator_id(self.db, creator_id)
