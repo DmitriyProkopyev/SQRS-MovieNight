@@ -1,3 +1,4 @@
+from datetime import timedelta
 import uuid
 
 from http import HTTPStatus
@@ -64,39 +65,39 @@ def test_malformed_token(client_with_logged_in_user) -> None:
 
     token = create_broken_access_token(subject="1", jti=str(uuid.uuid4()), iat=str(utcnow()))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
-    token = create_broken_access_token(subject="1", jti=str(uuid.uuid4()), exp=str(utcnow() + 100))
+    token = create_broken_access_token(subject="1", jti=str(uuid.uuid4()), exp=str(utcnow() + timedelta(seconds=100)))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
-    token = create_broken_access_token(subject="1", iat=str(utcnow()), exp=str(utcnow() + 100))
+    token = create_broken_access_token(subject="1", iat=str(utcnow()), exp=str(utcnow() + timedelta(seconds=100)))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
-    token = create_broken_access_token(jti=str(uuid.uuid4()), iat=str(utcnow()), exp=str(utcnow() + 100))
+    token = create_broken_access_token(jti=str(uuid.uuid4()), iat=str(utcnow()), exp=str(utcnow() + timedelta(seconds=100)))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
     token = create_broken_access_token(subject=str(uuid.uuid4()), jti=str(uuid.uuid4()), 
-                                       iat=str(utcnow()), exp=str(utcnow() + 100))
+                                       iat=str(utcnow()), exp=str(utcnow() + timedelta(seconds=100)))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
     token = create_broken_access_token(subject="1", jti="1", 
-                                       iat=str(utcnow()), exp=str(utcnow() + 100))
+                                       iat=str(utcnow()), exp=str(utcnow() + timedelta(seconds=100)))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
     token = create_broken_access_token(subject="1", jti=str(uuid.uuid4()), 
-                                       iat="test", exp=str(utcnow() + 100))
+                                       iat="test", exp=str(utcnow() + timedelta(seconds=100)))
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
     token = create_broken_access_token(subject="1", jti=str(uuid.uuid4()), 
                                        iat=str(utcnow()), exp="test")
     status_code, _ = me(client=client, access_token=token)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.UNAUTHORIZED
 
 
 def test_same_token_after_logout(client_with_logged_in_user) -> None:
@@ -114,30 +115,30 @@ def test_same_token_after_logout(client_with_logged_in_user) -> None:
 def test_malformed_request(client_with_logged_in_user) -> None:
     client, token = client_with_logged_in_user
     status_code, _ = me(client=client, access_token=None)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = me(client=client, access_token=str(uuid.uuid4()))
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     response = client.get(ME_ENDPOINT, 
                           headers={"accept": "application/json", 
                                    "Content-Type": "application/json",
                                    "Authorization": f"Basic {token}"})
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_accept_types(client_with_logged_in_user):
     client, token = client_with_logged_in_user
     for accept_type in WRONG_CONTENT_TYPES:
         status_code, _ = me(client=client, access_token=token, accept=accept_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_content_types(client_with_logged_in_user) -> None:
     client, token = client_with_logged_in_user
     for content_type in WRONG_CONTENT_TYPES:
         status_code, _ = me(client=client, access_token=token, content_type=content_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_http_methods(client_with_logged_in_user) -> None:

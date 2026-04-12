@@ -1,12 +1,15 @@
-from fastapi import HTTPException, status
+from movienight.services.auth_username_charset import (
+    ensure_no_esoteric_characters,
+    ensure_no_forbidden_punctuation,
+)
+from movienight.services.auth_username_length import ensure_username_length
 
 
 def normalize_username(username: str) -> str:
-    value = username.strip()
-    if value:
-        return value
+    return username.strip()
 
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Username cannot be empty.",
-    )
+
+def ensure_valid_username(username: str) -> None:
+    ensure_username_length(username)
+    ensure_no_esoteric_characters(username)
+    ensure_no_forbidden_punctuation(username)
