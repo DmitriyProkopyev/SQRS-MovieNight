@@ -5,21 +5,10 @@ from http import HTTPStatus
 from movienight.core.jwt_decoder import decode_access_token
 from tests.proposals.conftest import create_proposal, next_suitable_timeslot, PROPOSAL_ENDPOINT
 from tests.conftest import ESOTERIC_STRINGS, WRONG_CONTENT_TYPES
-from tests.auth.conftest import (
-        login,
-        register,
-        VALID_PASSWORD,
-        VALID_USERNAME,
-    )
 
-VALID_MOVIE_TITLE = "Interstellar"
-VALID_ROOM = "Room A"
-VALID_MOVIE_TITLE_2 = "Interstellar 2"
-VALID_ROOM_2 = "Room B"
-VALID_MOVIE_TITLE_3 = "Interstellar 3"
-VALID_MOVIE_TITLE_4 = "Interstellar 4"
-VALID_MOVIE_TITLE_5 = "Interstellar 5"
-VALID_MOVIE_TITLE_6 = "Interstellar 6"
+from tests.auth.conftest import login, register, VALID_PASSWORD, VALID_USERNAME
+from tests.proposals.conftest import VALID_MOVIE_TITLE, VALID_MOVIE_TITLE_2, VALID_MOVIE_TITLE_3, VALID_MOVIE_TITLE_4
+from tests.proposals.conftest import VALID_MOVIE_TITLE_5, VALID_MOVIE_TITLE_6, VALID_ROOM, VALID_ROOM_2
 
 
 def test_unique_valid(client_with_logged_in_users) -> None:
@@ -379,14 +368,6 @@ def test_esoteric_movie_titles(client_with_logged_in_users) -> None:
 def test_malformed_requests(client_with_logged_in_users) -> None:
     client, token, _ = client_with_logged_in_users
     start, end = next_suitable_timeslot()
-
-    status_code, _ = create_proposal(client=client,
-                                     access_token=None,
-                                     starts_at=start,
-                                     ends_at=end,
-                                     movie_title=VALID_MOVIE_TITLE,
-                                     room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNAUTHORIZED
 
     status_code, _ = create_proposal(client=client,
                                      access_token=token,

@@ -2,6 +2,7 @@ import pytest
 
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from typing import Iterable
 
 from movienight.main import app
 from movienight.db.base import Base
@@ -12,6 +13,16 @@ from tests.auth.conftest import VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2
 
 
 PROPOSAL_ENDPOINT = "/api/v1/proposals"
+HOME_ENDPOINT = "/api/v1/home"
+
+VALID_MOVIE_TITLE = "Interstellar"
+VALID_ROOM = "Room A"
+VALID_MOVIE_TITLE_2 = "Interstellar 2"
+VALID_ROOM_2 = "Room B"
+VALID_MOVIE_TITLE_3 = "Interstellar 3"
+VALID_MOVIE_TITLE_4 = "Interstellar 4"
+VALID_MOVIE_TITLE_5 = "Interstellar 5"
+VALID_MOVIE_TITLE_6 = "Interstellar 6"
 
 
 def next_suitable_timeslot(after: datetime = None) -> datetime:
@@ -83,6 +94,15 @@ def delete_proposal(client: TestClient,
     return response.status_code, response.json()
 
 
+def find_proposals(client: TestClient, access_token: str) -> Iterable[int]:
+    headers = _construct_headers(accept="application/json", content_type="application/json", access_token=access_token)
+    response = client.get(HOME_ENDPOINT, headers=headers).json()
+
+    for group in response["groups"]:
+        for proposal in group["proposals"]:
+            yield int(proposal["id"])
+
+
 @pytest.fixture(scope="function")
 def client_with_logged_in_users():
     with TestClient(app, base_url="http://127.0.0.1:8000") as test_client:
@@ -91,6 +111,45 @@ def client_with_logged_in_users():
 
         _, response = login(client=test_client, username=VALID_USERNAME, password=VALID_PASSWORD)
         _, response2 = login(client=test_client, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
+        yield test_client, response["access_token"], response2["access_token"]
+
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+
+@pytest.fixture(scope="function")
+def client_with_proposals_and_users():
+    with TestClient(app, base_url="http://127.0.0.1:8000") as test_client:
+        _, response = register(client=test_client, username=VALID_USERNAME, password=VALID_PASSWORD)
+        _, response2 = register(client=test_client, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
+
+        start, end = next_suitable_timeslot(datetime.now() + timedelta(hours=4))
+
+        create_proposal(client=test_client,
+                        access_token=response["access_token"],
+                        starts_at=start,
+                        ends_at=end,
+                        movie_title=VALID_MOVIE_TITLE,
+                        room=VALID_ROOM)
+        create_proposal(client=test_client,
+                        access_token=response["access_token"],
+                        starts_at=start,
+                        ends_at=end,
+                        movie_title=VALID_MOVIE_TITLE_2,
+                        room=VALID_ROOM_2)
+        create_proposal(client=test_client,
+                        access_token=response2["access_token"],
+                        starts_at=start,
+                        ends_at=end,
+                        movie_title=VALID_MOVIE_TITLE_3,
+                        room=VALID_ROOM)
+        create_proposal(client=test_client,
+                        access_token=response2["access_token"],
+                        starts_at=start,
+                        ends_at=end,
+                        movie_title=VALID_MOVIE_TITLE_4,
+                        room=VALID_ROOM_2)
+        
         yield test_client, response["access_token"], response2["access_token"]
 
     Base.metadata.drop_all(bind=engine)
