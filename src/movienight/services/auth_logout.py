@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 
-from movienight.core.security import decode_access_token
+from movienight.core.jwt_decoder import decode_access_token
 from movienight.schemas.auth import MessageResponse
 
 

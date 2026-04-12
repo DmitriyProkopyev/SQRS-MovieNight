@@ -4,8 +4,9 @@ import jwt
 from fastapi.testclient import TestClient
 from http import HTTPStatus
 
-from movienight.core.security import decode_access_token
-from tests.auth.conftest import login, LOGIN_ENDPOINT, VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2, WRONG_CONTENT_TYPES
+from movienight.core.jwt_decoder import decode_access_token
+from tests.auth.conftest import login, LOGIN_ENDPOINT, VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2
+from tests.conftest import WRONG_CONTENT_TYPES
 
 
 def test_valid(client_with_users: TestClient) -> None:

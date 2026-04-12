@@ -4,7 +4,9 @@ import string
 from fastapi.testclient import TestClient
 from http import HTTPStatus
 
-from tests.auth.conftest import register, REGISTRATION_ENDPOINT, VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2, WRONG_CONTENT_TYPES
+from tests.auth.conftest import register, REGISTRATION_ENDPOINT
+from tests.auth.conftest import VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2
+from tests.conftest import ESOTERIC_STRINGS, WRONG_CONTENT_TYPES
 
 
 def test_valid(default_client: TestClient) -> None:
@@ -196,7 +198,7 @@ def test_personal_info_in_passwords(default_client: TestClient) -> None:
     assert response["detail"] == "Password cannot contain public personal information, such as username."
 
 
-def test_malformed_request(default_client: TestClient) -> None:
+def test_malformed_requests(default_client: TestClient) -> None:
     status_code, _ = register(client=default_client, username=None, password=VALID_PASSWORD)
     assert status_code == HTTPStatus.BAD_REQUEST
 
