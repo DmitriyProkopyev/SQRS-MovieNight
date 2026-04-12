@@ -35,7 +35,7 @@ jobs:
       run: poetry run bandit -r src/ -ll
 
     - name: Run tests with coverage
-      run: poetry run pytest tests/ --cov=movienight --cov-fail-under=70
+      run: poetry run pytest tests/ --cov=movienight --cov-fail-under=70 --cov-report=term-missing
 
     - name: Check cyclomatic complexity
       run: | 
