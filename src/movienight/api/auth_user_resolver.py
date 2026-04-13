@@ -1,22 +1,17 @@
 from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials
 
-from movienight.api.auth_identity_from_token import resolve_user_from_token
-from movienight.api.auth_required_user import require_authenticated_user
+from movienight.api.auth_payload_validation import validate_auth_payload
+from movienight.api.auth_scheme import bearer_scheme
 from movienight.api.auth_token_reader import read_bearer_token
-from movienight.api.db_deps import DbSession
+from movienight.core.security import decode_access_token
 
 
-def get_optional_current_user(
-    db: DbSession,
-    token: str | None = Depends(read_bearer_token),
-):
-    if not token:
-        return None
-
-    return resolve_user_from_token(db, token)
-
-
-def get_current_user(
-    user=Depends(get_optional_current_user),
-):
-    return require_authenticated_user(user)
+def resolve_auth_payload(
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        bearer_scheme
+    ),
+) -> dict:
+    token = read_bearer_token(credentials)
+    payload = decode_access_token(token)
+    return validate_auth_payload(payload)

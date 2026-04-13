@@ -18,7 +18,7 @@ The application supports:
 - a catalog view for browsing all proposals
 - a weekly room schedule built on fixed 2-hour slots
 
-The project follows the SQR group project stack and quality-gate approach, where Poetry is part of the expected environment, and the backend/frontend stack is FastAPI + SQLite + Streamlit. fileciteturn5file0 The PM quality plan for Movie Night also fixes the required gates around flake8, bandit, coverage, radon, and endpoint documentation. fileciteturn5file1
+The project follows the SQR group project stack and quality-gate approach, where Poetry is part of the expected environment, and the backend/frontend stack is FastAPI + SQLite + Streamlit. The PM quality plan for Movie Night also fixes the required gates around flake8, bandit, coverage, radon, and endpoint documentation.
 
 ---
 
@@ -357,4 +357,4 @@ At the moment, the test suite in the archive is still mostly placeholder-level a
 
 ## 14. Authors / course context
 
-This repository is part of the SQR group project assignment for Spring 2026, using the required simple stack with Poetry, FastAPI, SQLite, Streamlit, and automated quality gates. fileciteturn5file0 The Movie Night PM quality plan focuses especially on reliable scheduling and voting behavior. fileciteturn5file1
+This repository is part of the SQR group project assignment for Spring 2026, using the required simple stack with Poetry, FastAPI, SQLite, Streamlit, and automated quality gates. The Movie Night PM quality plan focuses especially on reliable scheduling and voting behavior.

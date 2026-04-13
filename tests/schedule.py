@@ -1,3 +1,5 @@
+import pytest
+
 from datetime import UTC, date, datetime, time, timedelta
 from http import HTTPStatus
 
@@ -6,10 +8,30 @@ from fastapi.testclient import TestClient
 from movienight.db.models import Proposal, User
 from movienight.db.session import SessionLocal
 from movienight.core.slot_constants import ROOMS
-from tests.auth.conftest import WRONG_CONTENT_TYPES
+from tests.conftest import WRONG_CONTENT_TYPES
+
+from movienight.main import app
+from movienight.db.base import Base
+from movienight.db.session import engine
+
+from tests.auth.conftest import register, login, VALID_USERNAME, VALID_PASSWORD, VALID_USERNAME_2, VALID_PASSWORD_2
 
 
 SCHEDULE_ENDPOINT = "/api/v1/schedule"
+
+
+@pytest.fixture(scope="function")
+def client_with_logged_in_users():
+    with TestClient(app, base_url="http://127.0.0.1:8000") as test_client:
+        register(client=test_client, username=VALID_USERNAME, password=VALID_PASSWORD)
+        register(client=test_client, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
+
+        _, response = login(client=test_client, username=VALID_USERNAME, password=VALID_PASSWORD)
+        _, response2 = login(client=test_client, username=VALID_USERNAME_2, password=VALID_PASSWORD_2)
+        yield test_client, response["access_token"], response2["access_token"]
+
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 
 def get_schedule(

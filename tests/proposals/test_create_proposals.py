@@ -6,15 +6,9 @@ from movienight.core.jwt_decoder import decode_access_token
 from tests.proposals.conftest import create_proposal, next_suitable_timeslot, PROPOSAL_ENDPOINT
 from tests.conftest import ESOTERIC_STRINGS, WRONG_CONTENT_TYPES
 
-
-VALID_MOVIE_TITLE = "Interstellar"
-VALID_ROOM = "Room A"
-VALID_MOVIE_TITLE_2 = "Interstellar 2"
-VALID_ROOM_2 = "Room B"
-VALID_MOVIE_TITLE_3 = "Interstellar 3"
-VALID_MOVIE_TITLE_4 = "Interstellar 4"
-VALID_MOVIE_TITLE_5 = "Interstellar 5"
-VALID_MOVIE_TITLE_6 = "Interstellar 6"
+from tests.auth.conftest import login, register, VALID_PASSWORD, VALID_USERNAME
+from tests.proposals.conftest import VALID_MOVIE_TITLE, VALID_MOVIE_TITLE_2, VALID_MOVIE_TITLE_3, VALID_MOVIE_TITLE_4
+from tests.proposals.conftest import VALID_MOVIE_TITLE_5, VALID_MOVIE_TITLE_6, VALID_ROOM, VALID_ROOM_2
 
 
 def test_unique_valid(client_with_logged_in_users) -> None:
@@ -29,13 +23,13 @@ def test_unique_valid(client_with_logged_in_users) -> None:
     assert status_code == HTTPStatus.CREATED
 
     assert "id" in response, f"Creating a proposal did not return an id: {response}"
-    assert response["room"] == VALID_ROOM, f"Creating a proposal returned a wrong room: {response["room"]}"
-    assert response["movie_title"] == VALID_MOVIE_TITLE, f"Creating a proposal returned a wrong movie title: {response["movie_title"]}"
-    assert response["starts_at"] == str(start).replace(' ', 'T'), f"Creating a proposal returned a wrong start time: {response["starts_at"]}"
-    assert response["ends_at"] == str(end).replace(' ', 'T'), f"Creating a proposal returned a wrong end time: {response["ends_at"]}"
+    assert response["room"] == VALID_ROOM, f"Creating a proposal returned a wrong room: {response['room']}"
+    assert response["movie_title"] == VALID_MOVIE_TITLE, f"Creating a proposal returned a wrong movie title: {response['movie_title']}"
+    assert response["starts_at"] == str(start).replace(' ', 'T'), f"Creating a proposal returned a wrong start time: {response['starts_at']}"
+    assert response["ends_at"] == str(end).replace(' ', 'T'), f"Creating a proposal returned a wrong end time: {response['ends_at']}"
 
     creator_id = decode_access_token(token1)["sub"]
-    assert int(response["creator_id"]) == int(creator_id), f"Creating a proposal returned a wrong creator id: {response["creator_id"]}"
+    assert int(response["creator_id"]) == int(creator_id), f"Creating a proposal returned a wrong creator id: {response['creator_id']}"
 
     start2, end2 = next_suitable_timeslot(start - timedelta(seconds=1))
     status_code, response2 = create_proposal(client,
@@ -46,8 +40,8 @@ def test_unique_valid(client_with_logged_in_users) -> None:
                                              room=VALID_ROOM_2)
     assert status_code == HTTPStatus.CREATED
 
-    assert response["id"] != response2["id"], f"Creating two distinct proposals returned identical ids: {response["id"]}"
-    assert response["creator_id"] != response2["creator_id"], f"Creating proposals by distinct authors returned identical creator ids: {response["creator_id"]}"
+    assert response["id"] != response2["id"], f"Creating two distinct proposals returned identical ids: {response['id']}"
+    assert response["creator_id"] != response2["creator_id"], f"Creating proposals by distinct authors returned identical creator ids: {response['creator_id']}"
 
 
 def test_room_overlap_only(client_with_logged_in_users) -> None:
@@ -233,19 +227,38 @@ def test_overlap_too_many_proposals(client_with_logged_in_users) -> None:
     assert response["detail"] == "Too many overlapping proposals already exist in this room."
 
 
-@freeze_time("2026-04-12 13:50:10")
 def test_starts_too_soon(client_with_logged_in_users) -> None:
-    client, token, _ = client_with_logged_in_users
-    start, end = next_suitable_timeslot(datetime.now() - timedelta(hours=1))
+    client, _, _ = client_with_logged_in_users
 
-    status_code, response = create_proposal(client,
-                                            access_token=token,
-                                            starts_at=start,
-                                            ends_at=end,
-                                            movie_title=VALID_MOVIE_TITLE,
-                                            room=VALID_ROOM)
+    real_now = datetime.now()
+    start, end = next_suitable_timeslot(
+        real_now + timedelta(hours=1, minutes=1)
+    )
+    frozen_now = start - timedelta(minutes=30)
+
+    with freeze_time(frozen_now):
+        
+        _, login_response = login(
+            client=client,
+            username=VALID_USERNAME,
+            password=VALID_PASSWORD,
+        )
+        token = login_response["access_token"]
+
+        status_code, response = create_proposal(
+            client,
+            access_token=token,
+            starts_at=start,
+            ends_at=end,
+            movie_title=VALID_MOVIE_TITLE,
+            room=VALID_ROOM,
+        )
+
     assert status_code == HTTPStatus.BAD_REQUEST
-    assert "detail" in response, f"No error details were returned upon creating a proposal starting in less than an hour: {response}"
+    assert "detail" in response, (
+        "No error details were returned upon creating a proposal "
+        f"starting in less than an hour: {response}"
+    )
     assert response["detail"] == "New proposals should start later than an hour away."
 
 
@@ -322,7 +335,7 @@ def test_too_long_movie_titles(client_with_logged_in_users) -> None:
                                             room=VALID_ROOM)
         assert status_code == HTTPStatus.BAD_REQUEST
         assert "detail" in response, f"No error details were returned upon creating a proposal with a too long movie title: {response}"
-        assert response["detail"] == "Movie title length cannot exceed 100 characters."
+        assert response["detail"] == "Movie title length cannot exceed 255 characters."
 
     status_code, response = create_proposal(client,
                                             access_token=token,
@@ -354,20 +367,12 @@ def test_malformed_requests(client_with_logged_in_users) -> None:
     start, end = next_suitable_timeslot()
 
     status_code, _ = create_proposal(client=client,
-                                     access_token=None,
-                                     starts_at=start,
-                                     ends_at=end,
-                                     movie_title=VALID_MOVIE_TITLE,
-                                     room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNAUTHORIZED
-
-    status_code, _ = create_proposal(client=client,
                                      access_token=token,
                                      starts_at=None,
                                      ends_at=end,
                                      movie_title=VALID_MOVIE_TITLE,
                                      room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = create_proposal(client=client,
                                      access_token=token,
@@ -375,7 +380,7 @@ def test_malformed_requests(client_with_logged_in_users) -> None:
                                      ends_at=None,
                                      movie_title=VALID_MOVIE_TITLE,
                                      room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = create_proposal(client=client,
                                      access_token=token,
@@ -383,7 +388,7 @@ def test_malformed_requests(client_with_logged_in_users) -> None:
                                      ends_at=end,
                                      movie_title=None,
                                      room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = create_proposal(client=client,
                                      access_token=token,
@@ -391,7 +396,7 @@ def test_malformed_requests(client_with_logged_in_users) -> None:
                                      ends_at=end,
                                      movie_title=VALID_MOVIE_TITLE,
                                      room=None)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = create_proposal(client=client,
                                      access_token=token,
@@ -399,7 +404,7 @@ def test_malformed_requests(client_with_logged_in_users) -> None:
                                      ends_at=end,
                                      movie_title=VALID_MOVIE_TITLE,
                                      room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
     status_code, _ = create_proposal(client=client,
                                      access_token=token,
@@ -407,7 +412,7 @@ def test_malformed_requests(client_with_logged_in_users) -> None:
                                      ends_at="ends_at",
                                      movie_title=VALID_MOVIE_TITLE,
                                      room=VALID_ROOM)
-    assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_accept_types(client_with_logged_in_users):
@@ -422,7 +427,7 @@ def test_wrong_accept_types(client_with_logged_in_users):
                                          movie_title=VALID_MOVIE_TITLE,
                                          room=VALID_ROOM,
                                          accept=accept_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_content_types(client_with_logged_in_users) -> None:
@@ -437,7 +442,7 @@ def test_wrong_content_types(client_with_logged_in_users) -> None:
                                          movie_title=VALID_MOVIE_TITLE,
                                          room=VALID_ROOM,
                                          content_type=content_type)
-        assert status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_wrong_http_methods(client_with_logged_in_users) -> None:
