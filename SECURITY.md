@@ -61,10 +61,10 @@ flowchart TD
     Conjur -- "5. Sync Key (Periodic)" --> Vault
 
     %% Styling
-    classDef app fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef proxy fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef infra fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef file fill:#eeeeee,stroke:#424242,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef app fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000000;
+    classDef proxy fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000000;
+    classDef infra fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000000;
+    classDef file fill:#eeeeee,stroke:#424242,stroke-width:1px,stroke-dasharray:5 5,color:#000000;
 
     class MainApp app;
     class Proxy proxy;
