@@ -37,17 +37,17 @@ The following diagram illustrates the concrete implementation of the isolation p
 
 ```mermaid
 flowchart TD
-    subgraph AppHost [Application Context (Unprivileged)]
+    subgraph AppHost ["Application Context (Unprivileged)"]
         MainApp[Main Application<br>Business Logic]
     end
 
-    subgraph IsolatedHost [Isolated Security Context (Privileged)]
+    subgraph IsolatedHost ["Isolated Security Context (Privileged)"]
         Proxy[SQLite Proxy<br>FastAPI / pysqlcipher3]
         TokenFile[(<br>Conjur Token File<br>chmod 0400<br>)]
         SQLiteFile[(<br>Encrypted SQLite DB<br>)]
     end
 
-    subgraph SecretsInfra [Secrets Infrastructure (Internal Network)]
+    subgraph SecretsInfra ["Secrets Infrastructure (Internal Network)"]
         Conjur[Conjur Open Source<br>Machine Identity Broker]
         Vault[HashiCorp Vault<br>Key Generator]
     end
