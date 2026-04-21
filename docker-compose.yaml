@@ -1,0 +1,19 @@
+services:
+  vault:
+    image: hashicorp/vault
+    container_name: movienight-vault
+    cap_add:
+      - IPC_LOCK
+    command: >
+      server -dev
+      -dev-root-token-id=${VAULT_TOKEN}
+      -dev-listen-address=0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      SKIP_SETCAP: "true"
+      SKIP_CHOWN: "true"
+    volumes:
+      - ./vault/policies:/vault/policies:ro
