@@ -1,0 +1,13 @@
+- !policy
+  id: sqlite-policy
+  body:
+    - !host
+      id: database-proxy
+
+    - !variable
+      id: sqlite/key
+
+    - !permit
+      role: !host database-proxy
+      privileges: [ read, execute ]
+      resource: !variable sqlite/key
