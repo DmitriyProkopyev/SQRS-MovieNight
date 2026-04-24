@@ -13,7 +13,44 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_TOKEN: ${VAULT_TOKEN}
-      SKIP_SETCAP: "true"
-      SKIP_CHOWN: "true"
     volumes:
       - ./vault/policies:/vault/policies:ro
+    networks:
+      - edge
+      - app_internal
+
+  app:
+    build: .
+    command: uvicorn --app-dir src movienight.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      SQLITE_PROXY_URL: ${SQLITE_PROXY_URL}
+    depends_on:
+      - sqlite-proxy
+    networks:
+      - edge
+      - app_internal
+
+  sqlite-proxy:
+    build: .
+    command: uvicorn --app-dir src proxy.main:app --host 0.0.0.0 --port 9000
+    expose:
+      - "9000"
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+    depends_on:
+      - vault
+    volumes:
+      - ./src/proxy/conjur_token:/app/src/proxy/conjur_token:ro
+      - ./data:/data
+    networks:
+      - app_internal
+
+networks:
+  edge: {}
+  app_internal:
+    internal: true

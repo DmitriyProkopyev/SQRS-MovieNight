@@ -1,0 +1,68 @@
+name: movienight-conjur
+
+services:
+  openssl:
+    image: cyberark/conjur
+    entrypoint:
+      - openssl
+      - req
+      - -newkey
+      - rsa:2048
+      - -days
+      - "365"
+      - -nodes
+      - -x509
+      - -config
+      - /tmp/conf/tls.conf
+      - -extensions
+      - v3_ca
+      - -keyout
+      - /tmp/conf/nginx.key
+      - -out
+      - /tmp/conf/nginx.crt
+    volumes:
+      - ./infra/conjur/conf/tls:/tmp/conf
+
+  database:
+    image: postgres:15
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: password
+      POSTGRES_PASSWORD: SuperSecretPg
+    ports:
+      - "8432:5432"
+
+  conjur:
+    image: cyberark/conjur
+    command: server
+    environment:
+      DATABASE_URL: postgres://postgres:SuperSecretPg@database/postgres
+      CONJUR_DATA_KEY:
+      CONJUR_AUTHENTICATORS:
+      CONJUR_TELEMETRY_ENABLED: "false"
+      CONJUR_API_RESOURCE_LIST_LIMIT_MAX: "5000"
+    depends_on:
+      - database
+    restart: on-failure
+    ports:
+      - "8080:80"
+
+  proxy:
+    image: nginx:latest
+    ports:
+      - "8443:443"
+    volumes:
+      - ./infra/conjur/conf:/etc/nginx/conf.d:ro
+      - ./infra/conjur/conf/tls:/etc/nginx/tls:ro
+    depends_on:
+      - conjur
+      - openssl
+    restart: on-failure
+
+  client:
+    image: cyberark/conjur-cli:9
+    depends_on:
+      - proxy
+    entrypoint: sleep
+    command: infinity
+    volumes:
+      - ./infra/conjur/conf/policy:/policy

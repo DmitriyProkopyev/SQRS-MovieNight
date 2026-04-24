@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Session
-
-from movienight.repositories.revoked_tokens import RevokedTokenRepository
-from movienight.repositories.users import UserRepository
+from movienight.integrations.sqlite_proxy_repositories import (
+    RevokedTokenProxyRepository,
+    UserProxyRepository,
+)
 from movienight.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -14,10 +14,10 @@ from movienight.services.auth_register import register_user
 
 
 class AuthService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db) -> None:
         self.db = db
-        self.users = UserRepository(db)
-        self.revoked_tokens = RevokedTokenRepository(db)
+        self.users = UserProxyRepository(db)
+        self.revoked_tokens = RevokedTokenProxyRepository(db)
 
     def login(
         self,
