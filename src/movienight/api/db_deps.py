@@ -1,17 +1,12 @@
-from typing import Annotated, Generator
+from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
 
-from movienight.db.session import SessionLocal
-
-
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+from movienight.integrations.sqlite_proxy_client import SQLiteProxyClient
 
 
-DbSession = Annotated[Session, Depends(get_db)]
+def get_db() -> SQLiteProxyClient:
+    return SQLiteProxyClient()
+
+
+DbSession = Annotated[SQLiteProxyClient, Depends(get_db)]

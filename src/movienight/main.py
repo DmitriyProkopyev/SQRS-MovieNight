@@ -1,20 +1,18 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from movienight.api.openapi_customizer import build_custom_openapi
 from movienight.api.router import api_router
-from movienight.api.validation_error_handler import (
-    request_validation_exception_handler,
-)
+from movienight.api.validation_error_handler import request_validation_exception_handler
 from movienight.core.config import settings
-from movienight.db.init_db import initialize_database
-from fastapi.exceptions import RequestValidationError
 
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     description=(
-        "Movie Night backend API. Use /api/v1/auth/login to get a JWT "
+        "Movie Night backend API. "
+        "Use /api/v1/auth/login to get a JWT "
         "token, then use it for protected endpoints or in Streamlit."
     ),
     docs_url="/docs",
@@ -40,11 +38,6 @@ app.add_exception_handler(
     RequestValidationError,
     request_validation_exception_handler,
 )
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    initialize_database()
 
 
 @app.get(

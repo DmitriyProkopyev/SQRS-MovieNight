@@ -21,6 +21,9 @@ requests = "^2.33.1"
 httpx = "^0.28.1"
 argon2-cffi = "^25.1.0"
 freezegun = "^1.5.5"
+hvac = "^2.4.0"
+sqlcipher3 = "^0.6.2"
+conjur-api = "^0.1.10"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
