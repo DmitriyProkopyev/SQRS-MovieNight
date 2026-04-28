@@ -62,10 +62,10 @@ if [[ -z "${ADMIN_API_KEY:-}" ]]; then
 fi
 
 echo "==> initializing CLI in client container"
-dc exec -T client conjur init \
-  --url https://proxy \
-  --account "$ACCOUNT" \
-  --self-signed \
+dc exec -T client conjur init self-hosted \
+  -u https://proxy \
+  -a "$ACCOUNT" \
+  -s \
   --force
 
 echo "==> logging in as admin"
