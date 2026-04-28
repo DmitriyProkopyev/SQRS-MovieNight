@@ -35,5 +35,5 @@
 
     - !permit
       role: !host database-proxy
-      privileges: [ read, execute ]
+      privileges: [ read, execute, update ]
       resource: !variable sqlite/key

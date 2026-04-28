@@ -13,6 +13,7 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_TOKEN: ${VAULT_TOKEN}
+      SKIP_SETCAP: "true"
     volumes:
       - ./vault/policies:/vault/policies:ro
     networks:

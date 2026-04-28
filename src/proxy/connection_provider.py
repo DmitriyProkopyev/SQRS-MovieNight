@@ -57,8 +57,10 @@ def _run_async(coro):
 
 def init_encryption_key():
     vault_client = VaultSDKClient(url=VAULT_BASE_URL, token=VAULT_TOKEN)
-    response = vault_client.secrets.transit.generate_random_bytes(n_bytes=32)
-    encryption_key = response["data"]["random_bytes"].hex()
+    response = vault_client.secrets.transit.generate_random_bytes(
+        n_bytes=32, output_format="hex"
+    )
+    encryption_key = response["data"]["random_bytes"]
 
     conjur_client = ConjurClient()
     conjur_client.set_encryption_key(encryption_key)
