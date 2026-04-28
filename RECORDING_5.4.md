@@ -2,7 +2,7 @@
 
 > Извлечение ключа шифрования SQLite из Conjur Open Source через CLI-команду.
 
-Конкретно от тебя в видео ждут одного: чтобы команда из CLI вернула значение, лежащее в Conjur, и было видно, что:
+Цель видео — показать, что команда из CLI возвращает значение, лежащее в Conjur, и из кадра очевидно, что:
 - ключ хранится в централизованном секрет-брокере, а не в коде/конфиге репозитория,
 - его читает только авторизованный субъект (политика загружена и работает),
 - сам канал доступа защищён (HTTPS).
@@ -231,32 +231,41 @@ HTTP 401
 
 ---
 
-## Возможные вопросы коллег
+## Технический контекст
 
-**В: Откуда вообще берётся это значение в переменной?**
-В демонстрации значение было поставлено вручную через `conjur variable set` (шаг 5 cold-start). В прод-сценарии ключ генерируется в HashiCorp Vault через Transit engine (`vault_client.secrets.transit.generate_random_bytes(n_bytes=32)`) и синхронизируется в Conjur — см. `init_encryption_key` в `src/proxy/connection_provider.py`. Vault — источник правды, Conjur — точка авторизованной выдачи. Разделение нужно для separation of duties: компрометация одного не даёт ключ.
+Справка по тому, как устроена показанная схема — на случай, если по ходу обсуждения потребуется детализация.
 
-**В: Почему мы вообще доверяем Conjur, если он у нас self-hosted и self-signed?**
-Это явно зафиксировано в `SECURITY.md` → «What This Does Not Protect Against» → пункт 3: «Compromise of the centralized secret stores: the security of Vault and Conjur themselves is assumed.» Это не дыра, это обозначенная граница доверия. Conjur здесь — корень доверия по дизайну.
+### Источник значения переменной
 
-**В: Кто может прочитать переменную кроме показанного хоста?**
-Никто из application identity. В политике один-единственный `!permit`, на роль `!host database-proxy`, с `privileges: [read, execute]`. У Conjur deny-by-default — отсутствие `!permit` означает, что роль не получит ничего. Admin сохраняет суперюзерский доступ по дизайну Conjur, но его API-key хранится out-of-band и ни в один сервис не деплоится.
+В демонстрации значение поставлено вручную командой `conjur variable set` (шаг 5 cold-start). В прод-сценарии ключ генерируется в HashiCorp Vault через Transit engine (`vault_client.secrets.transit.generate_random_bytes(n_bytes=32)`) и синхронизируется в Conjur — см. `init_encryption_key` в `src/proxy/connection_provider.py`. Vault — источник правды, Conjur — точка авторизованной выдачи. Разделение даёт separation of duties: компрометация одного из двух не даёт ключ.
 
-**В: Что мешает злоумышленнику украсть `src/proxy/conjur_token` и читать переменную от имени прокси?**
-Несколько слоёв:
-- файл смонтирован read-only внутрь контейнера sqlite-proxy, права `0400` на хосте,
-- API-key ротируем командой `conjur host rotate-api-key -i sqlite-policy/database-proxy` — старый сразу инвалидируется,
-- это API-key одного хоста, не root-токен; даже утечка ограничена тем, что прописано в политике sqlite-policy,
-- доступ к контейнеру с прокси сам по себе предполагает full host compromise — это явно вне модели угроз (см. `SECURITY.md`).
+### Граница доверия к Conjur
 
-**В: Соединение между прокси и Conjur зашифровано?**
-Да. nginx внутри Conjur-стека терминирует TLS на порту 443 (`infra/conjur/conf/default.conf`), self-signed cert лежит в `infra/conjur/conf/tls/nginx.crt`, его SAN включает `DNS:proxy`. SDK прокси (`conjur-api` Python SDK) валидирует cert в режиме `SslVerificationMode.SELF_SIGN` с явно переданным `cert_file`. Никакого `verify=False` обхода нет.
+В `SECURITY.md` → «What This Does Not Protect Against», пункт 3, явно зафиксировано: «Compromise of the centralized secret stores: the security of Vault and Conjur themselves is assumed.» Self-hosted self-signed Conjur — это сознательный выбор корня доверия, а не упущение.
 
-**В: Почему Conjur Open Source, а не сразу Vault?**
-Vault и Conjur решают разные задачи. Vault — generation/rotation/PKI/Transit. Conjur — fine-grained RBAC доступа к существующим секретам со стороны множества machine identity. У нас Vault генерирует, Conjur публикует строго одной identity. Это повторяет паттерн, типичный для CyberArk-стека.
+### Контроль доступа к переменной
 
-**В: А этот же ключ можно достать из самого приложения (movienight)?**
-Нет. По архитектуре (см. `SECURITY.md` → «Conceptual Approach»), главное приложение `movienight` не знает ни про Conjur, ни про токен. Оно ходит только в sqlite-proxy по HTTP, а уже proxy ходит в Conjur за ключом. Memory dump главного приложения не вернёт ничего, относящегося к ключу.
+В политике один-единственный `!permit`: роль `!host database-proxy`, привилегии `[read, execute]`, ресурс `!variable sqlite/key`. У Conjur deny-by-default — отсутствие `!permit` означает, что роль не получит ничего. Admin сохраняет суперюзерский доступ по дизайну Conjur, но его API-key хранится out-of-band и ни в один сервис не деплоится.
+
+### Защита API-key хоста sqlite-proxy
+
+Файл `src/proxy/conjur_token` имеет несколько уровней защиты:
+- смонтирован read-only внутрь контейнера sqlite-proxy, права `0400` на хосте,
+- API-key ротируется командой `conjur host rotate-api-key -i sqlite-policy/database-proxy` — старый инвалидируется немедленно,
+- это API-key одного хоста, не root-токен; даже утечка ограничена политикой sqlite-policy,
+- доступ к самому файлу подразумевает full host compromise — это явно вне модели угроз (см. `SECURITY.md`).
+
+### Шифрование канала proxy ↔ Conjur
+
+nginx внутри Conjur-стека терминирует TLS на порту 443 (`infra/conjur/conf/default.conf`), self-signed cert лежит в `infra/conjur/conf/tls/nginx.crt`, его SAN включает `DNS:proxy`. SDK на стороне прокси (`conjur-api` Python SDK) валидирует cert в режиме `SslVerificationMode.SELF_SIGN` с явно переданным `cert_file`. `verify=False`-обходов в коде нет.
+
+### Разделение ролей Vault и Conjur
+
+Vault и Conjur — разные задачи. Vault: generation, rotation, PKI, Transit. Conjur: fine-grained RBAC доступа к существующим секретам со стороны множества machine identity. У нас Vault генерирует, Conjur публикует строго одной identity. Это повторяет паттерн, типичный для CyberArk-стека.
+
+### Изоляция ключа от main app
+
+По архитектуре (см. `SECURITY.md` → «Conceptual Approach») главное приложение `movienight` не знает ни про Conjur, ни про токен. Оно ходит только в sqlite-proxy по HTTP; в Conjur за ключом ходит sqlite-proxy. Memory dump главного приложения не возвращает ничего, относящегося к ключу.
 
 ---
 
@@ -272,10 +281,10 @@ Vault и Conjur решают разные задачи. Vault — generation/rot
 
 ---
 
-## Что это видео НЕ показывает (если спросят, чтобы не ловили на отсутствии)
+## Границы задачи 5.4
 
-- Не показывает, как sqlite-proxy в рантайме реально использует ключ — это смежная задача (поднять `docker-compose.yaml`, см. коммит `f68778c`).
-- Не показывает синхронизацию Vault → Conjur — функция `init_encryption_key` существует, но в этом кадре не вызывается.
-- Не показывает rotation flow (`conjur host rotate-api-key`) — это отдельный показ, не часть 5.4.
+5.4 покрывает только извлечение ключа из Conjur. В этот видео-кадр сознательно не входят смежные части системы:
 
-Если попросят показать что-то из этого — ссылайся на то, что 5.4 — про извлечение, а не про rotation/sync/runtime-integration.
+- runtime-использование ключа в sqlite-proxy — демонстрируется отдельно при поднятом основном стеке `docker-compose.yaml` (см. коммит `f68778c`),
+- синхронизация Vault → Conjur — реализована в `init_encryption_key` (`src/proxy/connection_provider.py`), в кадр не входит,
+- ротация хост-ключа (`conjur host rotate-api-key`) — отдельный сценарий.
