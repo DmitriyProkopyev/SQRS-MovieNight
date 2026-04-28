@@ -30,10 +30,10 @@ sudo gcore -o /tmp/dumps/app   "$APP_PID"
 sudo gcore -o /tmp/dumps/proxy "$PROXY_PID"
 
 # 4. Main result: key absent from main app memory
-sudo grep -ao "$KEY" /tmp/dumps/app.$APP_PID   | wc -l   # expect 0
+sudo strings -a /tmp/dumps/app.$APP_PID   | grep -c "$KEY"   # expect 0
 
 # 5. Positive control: key present in proxy memory (proves the method works)
-sudo grep -ao "$KEY" /tmp/dumps/proxy.$PROXY_PID | wc -l # expect > 0
+sudo strings -a /tmp/dumps/proxy.$PROXY_PID | grep -c "$KEY" # expect > 0
 
 # 6. Clean up the dumps
 sudo rm /tmp/dumps/app.$APP_PID /tmp/dumps/proxy.$PROXY_PID
