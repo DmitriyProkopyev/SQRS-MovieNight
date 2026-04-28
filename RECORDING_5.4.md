@@ -31,13 +31,6 @@ curl -sk https://localhost:8443/secrets/myConjurAccount/variable/sqlite-policy%2
   -o /dev/null -w "HTTP %{http_code}\n"
 ```
 
-## Не показывать в кадре
-
-- `src/proxy/conjur_token` — реальный API-key хоста sqlite-proxy,
-- `.env` — содержит `CONJUR_DATA_KEY`,
-- запуск `bootstrap.sh` — печатает admin API-key,
-- история shell, уведомления десктопа, вкладки браузера с токенами.
-
 ## Cold start
 
 Нужен при первом подъёме на машине или после рестарта Conjur-контейнера (Postgres под Conjur без volume — состояние теряется). Bootstrap печатает admin API-key, поэтому делать **до** записи.
