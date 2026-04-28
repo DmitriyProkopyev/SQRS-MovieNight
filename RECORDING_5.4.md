@@ -11,6 +11,37 @@
 
 ---
 
+## Команды
+
+Pre-flight (off-camera):
+
+```bash
+docker compose -f docker-compose.conjur.yaml ps
+docker compose -f docker-compose.conjur.yaml exec -T client \
+  conjur variable get -i sqlite-policy/sqlite/key
+```
+
+В кадре, по порядку:
+
+```bash
+# 1. политика
+cat infra/conjur/conf/policy/sqlite-proxy.yml
+
+# 2. стек
+docker compose -f docker-compose.conjur.yaml ps
+
+# 3. извлечение ключа (ключевой кадр)
+./scripts/demo_get_key.sh
+
+# 4. enforcement (опционально): без auth → HTTP 401
+curl -sk https://localhost:8443/secrets/myConjurAccount/variable/sqlite-policy%2Fsqlite%2Fkey \
+  -o /dev/null -w "HTTP %{http_code}\n"
+```
+
+Подробности (что говорить, что показывать, что не показывать, recovery) — ниже.
+
+---
+
 ## Что попадает в кадр
 
 Минимально (≈ 30 секунд) — три команды:
