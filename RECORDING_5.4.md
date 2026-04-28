@@ -1,16 +1,16 @@
 # Запись демонстрации задачи 5.4
 
-Извлечение SQLCipher-ключа из Conjur Open Source через CLI-команду. Ключ перед извлечением кладётся в Conjur самим прокси, который генерирует его в HashiCorp Vault через Transit engine.
+Извлечение SQLCipher-ключа из Conjur Open Source через CLI-команду. Все действия — от лица sqlite-proxy: он же синхронизирует ключ из Vault в Conjur (Transit engine), он же потом читает его обратно по своей host identity (`host/sqlite-policy/database-proxy`).
 
 ## Перед записью
 
-Поднять оба стека и убедиться, что sync проходит:
+Поднять оба стека и убедиться, что чтение и sync проходят:
 
 ```bash
 docker compose -f docker-compose.conjur.yaml up -d
 docker compose -f docker-compose.yaml up -d
+./scripts/demo_get_key_via_proxy.sh     # должно вернуть 64 hex-символа
 ./scripts/demo_sync_key_from_vault.sh   # должно вернуть 'OK'
-./scripts/demo_get_key.sh               # должно вернуть 64 hex-символа
 ```
 
 Любая ошибка — пройти «Cold start» ниже.
@@ -18,22 +18,24 @@ docker compose -f docker-compose.yaml up -d
 ## В кадре
 
 ```bash
-# 1. политика: кому разрешено читать и писать переменную
+# 1. политика: что разрешено хосту прокси
 cat infra/conjur/conf/policy/sqlite-proxy.yml
 
 # 2. оба стека подняты
 docker compose -f docker-compose.conjur.yaml ps
 docker compose -f docker-compose.yaml ps
 
-# 3. значение в Conjur ДО sync
-./scripts/demo_get_key.sh
+# 3. прокси ЧИТАЕТ текущий ключ из Conjur (host identity, runtime path)
+./scripts/demo_get_key_via_proxy.sh
 
-# 4. прокси: vault transit/random/32 -> conjur variable set (ключевой кадр)
+# 4. прокси СИНХРОНИЗИРУЕТ новый ключ: vault transit/random/32 -> conjur variable set
 ./scripts/demo_sync_key_from_vault.sh
 
-# 5. значение в Conjur ПОСЛЕ sync — другое, его положил прокси
-./scripts/demo_get_key.sh
+# 5. прокси ЧИТАЕТ снова — значение другое, его положил сам прокси
+./scripts/demo_get_key_via_proxy.sh
 ```
+
+Опционально, проверка от внешней стороны (не от прокси): `./scripts/demo_get_key.sh` — то же значение, но через admin CLI в `client`-контейнере.
 
 ## Cold start
 
@@ -64,5 +66,5 @@ docker exec -e VAULT_TOKEN=root -e VAULT_ADDR=http://127.0.0.1:8200 \
 
 # 5) Прогнать sync, чтобы переменная имела значение к началу записи
 ./scripts/demo_sync_key_from_vault.sh
-./scripts/demo_get_key.sh
+./scripts/demo_get_key_via_proxy.sh
 ```
