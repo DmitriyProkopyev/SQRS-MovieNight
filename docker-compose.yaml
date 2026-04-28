@@ -42,15 +42,24 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_TOKEN: ${VAULT_TOKEN}
+      CONJUR_BASE_URL: https://proxy:443
+      CONJUR_ACCOUNT: myConjurAccount
+      CONJUR_LOGIN_FOR_PROXY: host/sqlite-policy/database-proxy
+      CONJUR_CERT_FILE: /etc/conjur-tls/nginx.crt
     depends_on:
       - vault
     volumes:
       - ./src/proxy/conjur_token:/app/src/proxy/conjur_token:ro
+      - ./infra/conjur/conf/tls/nginx.crt:/etc/conjur-tls/nginx.crt:ro
       - ./data:/data
     networks:
       - app_internal
+      - conjur_link
 
 networks:
   edge: {}
   app_internal:
     internal: true
+  conjur_link:
+    external: true
+    name: movienight-conjur_default
