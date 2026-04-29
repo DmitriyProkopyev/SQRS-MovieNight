@@ -22,6 +22,8 @@ services:
       - /tmp/conf/nginx.crt
     volumes:
       - ./infra/conjur/conf/tls:/tmp/conf
+    networks:
+      - app_internal
 
   database:
     image: postgres:15
@@ -30,13 +32,15 @@ services:
       POSTGRES_PASSWORD: SuperSecretPg
     ports:
       - "8432:5432"
+    networks:
+      - app_internal
 
   conjur:
     image: cyberark/conjur
     command: server
     environment:
       DATABASE_URL: postgres://postgres:SuperSecretPg@database/postgres
-      CONJUR_DATA_KEY:
+      CONJUR_DATA_KEY: ${CONJUR_DATA_KEY}
       CONJUR_AUTHENTICATORS:
       CONJUR_TELEMETRY_ENABLED: "false"
       CONJUR_API_RESOURCE_LIST_LIMIT_MAX: "5000"
@@ -45,6 +49,8 @@ services:
     restart: on-failure
     ports:
       - "8080:80"
+    networks:
+      - app_internal
 
   proxy:
     image: nginx:latest
@@ -57,6 +63,8 @@ services:
       - conjur
       - openssl
     restart: on-failure
+    networks:
+      - app_internal
 
   client:
     image: cyberark/conjur-cli:9
@@ -66,3 +74,9 @@ services:
     command: infinity
     volumes:
       - ./infra/conjur/conf/policy:/policy
+    networks:
+      - app_internal
+
+networks:
+  app_internal:
+    external: true

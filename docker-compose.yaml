@@ -14,11 +14,29 @@ services:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_TOKEN: ${VAULT_TOKEN}
       SKIP_SETCAP: "true"
+      SKIP_CHOWN: "true"
     volumes:
       - ./vault/policies:/vault/policies:ro
     networks:
       - edge
       - app_internal
+
+  vault-init:
+    image: hashicorp/vault
+    depends_on:
+      - vault
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN}
+    command: >
+      sh -c "
+        sleep 5
+        vault secrets list | grep -q '^transit/' || vault secrets enable transit
+        # vault policy write sqlite-key /vault/policies/sqlite-key-policy.hcl
+      "
+    networks:
+      - app_internal
+    restart: "no"
 
   app:
     build: .
@@ -40,27 +58,21 @@ services:
     command: uvicorn --app-dir src proxy.main:app --host 0.0.0.0 --port 9000
     expose:
       - "9000"
+    ports:  # THIS IS ONLY FOR DEMONSTRATION PURPOSES AND DOES NOT VIOLATE THE PoC
+      - "9000:9000"
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_TOKEN: ${VAULT_TOKEN}
-      CONJUR_BASE_URL: https://proxy:443
-      CONJUR_ACCOUNT: myConjurAccount
-      CONJUR_LOGIN_FOR_PROXY: host/sqlite-policy/database-proxy
-      CONJUR_CERT_FILE: /etc/conjur-tls/nginx.crt
     depends_on:
       - vault
+      - vault-init
     volumes:
       - ./src/proxy/conjur_token:/app/src/proxy/conjur_token:ro
-      - ./infra/conjur/conf/tls/nginx.crt:/etc/conjur-tls/nginx.crt:ro
       - ./data:/data
     networks:
       - app_internal
-      - conjur_link
 
 networks:
   edge: {}
   app_internal:
-    internal: true
-  conjur_link:
     external: true
-    name: movienight-conjur_default

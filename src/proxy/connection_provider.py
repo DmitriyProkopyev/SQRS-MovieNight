@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import os
 import threading
 from pathlib import Path
@@ -19,15 +20,15 @@ from sqlcipher3 import dbapi2 as sqlite
 VAULT_BASE_URL = os.environ.get("VAULT_ADDR")
 VAULT_TOKEN = os.environ.get("VAULT_TOKEN")
 
-CONJUR_BASE_URL = os.environ.get("CONJUR_BASE_URL", "https://conjur:3000")
-CONJUR_ACCOUNT = os.environ.get("CONJUR_ACCOUNT", "movienight")
-CONJUR_LOGIN_FOR_PROXY = os.environ.get("CONJUR_LOGIN_FOR_PROXY", "host/database-proxy")
+CONJUR_BASE_URL = os.environ.get("CONJUR_BASE_URL", "http://conjur:80")
+ACCOUNT = os.environ.get("CONJUR_ACCOUNT", "movienight")
+SQLITE_POLICY = "sqlite-policy"
+CONJUR_LOGIN_FOR_PROXY = os.environ.get("CONJUR_LOGIN_FOR_PROXY", f"host/{SQLITE_POLICY}/database-proxy")
 CONJUR_CERT_FILE = os.environ.get("CONJUR_CERT_FILE")
 
 CONJUR_TOKEN_FILE = Path(__file__).resolve().parent / "conjur_token"
-
 SQLITE_SECRET_PATH = "sqlite/key"
-SQLITE_POLICY = "sqlite-policy"
+VAULT_ACCESS_PATH = f"{ACCOUNT}/{SQLITE_SECRET_PATH}"
 
 
 def _run_async(coro):
@@ -57,10 +58,26 @@ def _run_async(coro):
 
 def init_encryption_key():
     vault_client = VaultSDKClient(url=VAULT_BASE_URL, token=VAULT_TOKEN)
-    response = vault_client.secrets.transit.generate_random_bytes(
-        n_bytes=32, output_format="hex"
+
+    if not vault_client.is_authenticated():
+        raise RuntimeError("Vault auth failed")
+
+    response = vault_client.secrets.transit.generate_random_bytes(n_bytes=32)
+    raw_key = response["data"]["random_bytes"]
+
+    if isinstance(raw_key, str):
+        raw_key = raw_key.encode("utf-8")
+    elif isinstance(raw_key, bytes):
+        raw_key = raw_key
+    else:
+        raise TypeError(f"Unexpected type for random_bytes: {type(raw_key)}")
+
+    encryption_key = base64.b64encode(raw_key).decode("utf-8")
+    vault_client.secrets.kv.v2.create_or_update_secret(
+        path=VAULT_ACCESS_PATH,
+        secret={"encryption_key": encryption_key},
+        mount_point="secret"
     )
-    encryption_key = response["data"]["random_bytes"]
 
     conjur_client = ConjurClient()
     conjur_client.set_encryption_key(encryption_key)
@@ -70,9 +87,14 @@ class ConjurClient:
     def __init__(self):
         conjur_token = CONJUR_TOKEN_FILE.read_text(encoding="utf-8").strip()
 
+        if not CONJUR_BASE_URL:
+            raise RuntimeError("CONJUR_BASE_URL is not set")
+        if not ACCOUNT:
+            raise RuntimeError("CONJUR_ACCOUNT is not set")
+
         connection_info = ConjurConnectionInfo(
             conjur_url=CONJUR_BASE_URL,
-            account=CONJUR_ACCOUNT,
+            account=ACCOUNT,
             cert_file=CONJUR_CERT_FILE,
             service_id=None,
             proxy_params=None,

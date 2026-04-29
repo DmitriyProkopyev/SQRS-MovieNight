@@ -20,7 +20,7 @@
 set -euo pipefail
 
 COMPOSE_FILE="docker-compose.conjur.yaml"
-ACCOUNT="myConjurAccount"
+ACCOUNT="movienight"
 POLICY_FILE_IN_CLIENT="/policy/sqlite-proxy.yml"
 HOST_ID="sqlite-policy/database-proxy"
 TOKEN_OUTPUT="src/proxy/conjur_token"
@@ -62,10 +62,10 @@ if [[ -z "${ADMIN_API_KEY:-}" ]]; then
 fi
 
 echo "==> initializing CLI in client container"
-dc exec -T client conjur init self-hosted \
-  -u https://proxy \
-  -a "$ACCOUNT" \
-  -s \
+printf "3\n" | dc exec -T client conjur init \
+  --url https://proxy \
+  --account "$ACCOUNT" \
+  --self-signed \
   --force
 
 echo "==> logging in as admin"
@@ -85,7 +85,7 @@ fi
 echo "==> writing host API key to $TOKEN_OUTPUT (mode 0400)"
 mkdir -p "$(dirname "$TOKEN_OUTPUT")"
 printf '%s' "$HOST_API_KEY" > "$TOKEN_OUTPUT"
-chmod 0400 "$TOKEN_OUTPUT" 2>/dev/null || true
+chmod 0600 "$TOKEN_OUTPUT" 2>/dev/null || true
 
 echo
 echo "Conjur is bootstrapped."
